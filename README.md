@@ -1,5 +1,5 @@
-# PDF_QnA_app
-📚 QnA PDF App with RAG
+
+# 📚 QnA PDF App with RAG
 
 An interactive web application built using Streamlit that lets you upload PDF documents and ask questions based on their content using Retrieval-Augmented Generation (RAG).
 
@@ -13,23 +13,23 @@ This app integrates:
 
 💬 MistralAI LLM for generating answers
 
-🚀 Features
+# 🚀 Features
 
-Upload PDF documents via the sidebar
+1. Upload PDF documents via the sidebar
 
-Click "Upload & Process" to extract, chunk, and embed the content
+2. Click "Upload & Process" to extract, chunk, and embed the content
 
-Ask natural language questions about your PDF
+3. Ask natural language questions about your PDF
 
-Instant, intelligent answers using RAG pipeline
+4. Instant, intelligent answers using RAG pipeline
 
-Clean, aesthetic UI with smooth animations
+5. Clean, aesthetic UI with smooth animations
 
-🛠️ Setup Instructions
+# 🛠️ Setup Instructions
 
 1. Clone the Repository
 
-git clone https://github.com/TheNucleya02/PDF_QnA_app.git
+git clone https://github.com/TheNucleya02/PDF_QnA_app.git \n
 cd PDF_QnA_app
 
 2. Install Dependencies
@@ -40,17 +40,17 @@ pip install -r requirements.txt
 
 Replace the following in streamlit_app.py (or your main file):
 
-ASTRA_DB_API_ENDPOINT = "<your_astra_endpoint>"
-ASTRA_DB_APPLICATION_TOKEN = "<your_astra_token>"
-MISTRAL_API_KEY = "<your_mistral_api_key>"
+ASTRA_DB_API_ENDPOINT = "<your_astra_endpoint>" \n
+ASTRA_DB_APPLICATION_TOKEN = "<your_astra_token>" \n
+MISTRAL_API_KEY = "<your_mistral_api_key>"\n
 
 4. Run the App
 
 streamlit run streamlit_app.py
 
-🧠 How It Works
+# 🧠 How It Works
 
-PDF Processing:
+## PDF Processing:
 
 Extracts text from uploaded PDF using PyPDFLoader
 
@@ -60,7 +60,7 @@ Embeds text using HuggingFace model
 
 Stores them in AstraDB Vector Store
 
-Question Answering:
+## Question Answering:
 
 Retrieves relevant chunks based on question
 
@@ -68,15 +68,16 @@ Feeds them into MistralAI via a LangChain retrieval chain
 
 Displays generated answer
 
-📸 Screenshot
+# 📸 Screenshot
+
+<img width="1381" alt="Screenshot 2025-04-06 at 11 48 25 PM" src="https://github.com/user-attachments/assets/9f2fb45e-3eac-4b75-96ae-61f65b464d3c" />
 
 
-
-📄 License
+# 📄 License
 
 This project is licensed under the MIT License.
 
-🙌 Acknowledgements
+# 🙌 Acknowledgements
 
 LangChain
 
@@ -88,5 +89,5 @@ Streamlit
 
 AstraDB
 
-Made with ❤️ by Aman
+## Made with ❤️ by Aman
 
