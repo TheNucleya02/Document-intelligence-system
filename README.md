@@ -1,13 +1,13 @@
 
-# 📚 QnA PDF App with RAG
+# 📚 Document QnA App with RAG (PDF, DOCX, Images)
 
-An interactive web application built using Streamlit that lets you upload PDF documents and ask questions based on their content using Retrieval-Augmented Generation (RAG).
+An interactive Streamlit app to upload and index documents (PDF, DOCX, images via OCR) and ask questions using Retrieval-Augmented Generation (RAG).
 
 This app integrates:
 
 🧠 LangChain for chaining components
 
-🤗 HuggingFace Embeddings for semantic search
+🧭 MistralAI Embeddings for semantic search
 
 📦 AstraDB vector store for storing document embeddings
 
@@ -15,17 +15,17 @@ This app integrates:
 
 # 🚀 Features
 
-1. Upload PDF documents via the sidebar
+1. Upload documents (PDF, DOCX, images) via the sidebar
 
-2. Click "Upload & Process" to extract, chunk, and embed the content
+2. Choose chunking strategy (Recursive or Semantic), then click "Upload & Process" to extract, chunk, and embed the content
 
-3. Ask natural language questions about your PDF
+3. Ask natural language questions about your documents
 
 4. Instant, intelligent answers using RAG pipeline
 
 5. Clean, aesthetic UI with smooth animations
 
-# 🛠️ Setup Instructions
+# 🛠️ Setup
 
 1. Clone the Repository
 
@@ -38,35 +38,44 @@ pip install -r requirements.txt
 
 3. Add API Keys
 
-Replace the following in streamlit_app.py (or your main file):
+Create a `.env` file with the following:
 
-ASTRA_DB_API_ENDPOINT = "<your_astra_endpoint>" \n
-ASTRA_DB_APPLICATION_TOKEN = "<your_astra_token>" \n
-MISTRAL_API_KEY = "<your_mistral_api_key>"\n
+ASTRA_DB_API_ENDPOINT=<your_astra_endpoint>
+ASTRA_DB_APPLICATION_TOKEN=<your_astra_token>
+MISTRAL_API_KEY=<your_mistral_api_key>
 
 4. Run the App
 
-streamlit run streamlit_app.py
+streamlit run main.py
 
 # 🧠 How It Works
 
-## PDF Processing:
+## Ingestion & Processing
 
-Extracts text from uploaded PDF using PyPDFLoader
+Supports:
 
-Splits text into chunks using RecursiveCharacterTextSplitter
+- PDF via `PyPDFLoader`
+- DOCX via `Docx2txtLoader`
+- Images (PNG/JPG/TIFF/BMP) via OCR (`pytesseract`)
 
-Embeds text using HuggingFace model
+Chunking strategies:
 
-Stores them in AstraDB Vector Store
+- Recursive character splitter (configurable size/overlap)
+- Semantic chunking (via `langchain-experimental` SemanticChunker) when available
 
-## Question Answering:
+Embeddings & storage:
 
-Retrieves relevant chunks based on question
+- MistralAI `mistral-embed`
+- AstraDB Vector Store
 
-Feeds them into MistralAI via a LangChain retrieval chain
+OCR prerequisites:
 
-Displays generated answer
+- Install Tesseract on macOS: `brew install tesseract`
+- On Linux: `sudo apt-get install tesseract-ocr`
+
+## Question Answering
+
+Retrieves relevant chunks using MMR retriever and generates concise answers with Mistral `mistral-large-latest` using a history-aware RAG chain.
 
 # 📸 Screenshot
 
