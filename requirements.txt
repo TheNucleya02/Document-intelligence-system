@@ -1,13 +1,11 @@
 pypdf
 langchain_community
 langchain-text-splitters
-langchain-astradb>=0.3.3
-langchain-mistralai
-langchain_astradb
+langchain-community
 python-dotenv
 python-docx
 docx2txt
 pillow
-pytesseract
 streamlit
-langchain-experimental
+langchain
+tenacity
