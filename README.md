@@ -1,7 +1,32 @@
 
 # PDF Q&A Application
 
-A document question-answering system built with FastAPI backend and Streamlit frontend.
+A powerful **Document Question-Answering System** built with **FastAPI (Backend)** and **Streamlit (Frontend)**.  
+Upload your PDFs or DOCX files and interact with them using **Mistral AI** with **AstraDB vector storage**.  
+
+---
+
+## 🚀 Features  
+
+- 📂 **Upload Documents** – Supports **PDF & DOCX** formats  
+- 🤖 **AI-Powered Q&A** – Ask questions and get context-aware answers using **Mistral AI**  
+- 💾 **Vector Database** – Store and query document embeddings with **AstraDB**  
+- 💬 **Conversational Memory** – Keep track of chat history while querying  
+- 🎨 **Modern UI** – Clean, simple, and interactive interface with **Streamlit**  
+- 🔗 **FastAPI Backend** – Provides REST API endpoints for document operations  
+- 🛠 **Extensible** – Easy to add new LLMs or vector stores in the future  
+
+---
+
+## 🛠 Tech Stack  
+
+- **Frontend:** [Streamlit](https://streamlit.io/)  
+- **Backend:** [FastAPI](https://fastapi.tiangolo.com/)  
+- **Vector DB:** [AstraDB](https://www.datastax.com/astra-db)  
+- **Embeddings & LLM:** [Mistral AI](https://mistral.ai/)  
+- **Deployment:** Render / Local  
+
+---
 
 ## Quick Start
 
