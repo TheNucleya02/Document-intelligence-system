@@ -1,11 +1,30 @@
-pypdf
-langchain_community
-langchain-text-splitters
-langchain-community
-python-dotenv
-python-docx
-docx2txt
-pillow
-streamlit
-langchain
-tenacity
+# Backend dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic>=2.5.2,<3
+
+# Frontend dependencies
+streamlit==1.28.1
+
+# Document processing
+pypdf==3.17.4
+python-docx==1.1.0
+docx2txt==0.8
+pillow==10.1.0
+
+# LangChain and AI
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
+langchain-mistralai>=0.0.1
+langchain-astra
+mistralai>=0.4.0,<1
+
+# Vector database
+astrapy==0.7.4
+
+# Utilities
+python-dotenv==1.0.0
+tenacity==8.2.3
+requests==2.31.0
