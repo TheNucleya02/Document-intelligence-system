@@ -21,7 +21,7 @@ st.markdown("""
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'collection_name' not in st.session_state:
-    st.session_state.collection_name = "doc_store"
+    st.session_state.collection_name = "pdf_docs"
 if 'session_id' not in st.session_state:
     st.session_state.session_id = f"session_{int(time.time())}"
 

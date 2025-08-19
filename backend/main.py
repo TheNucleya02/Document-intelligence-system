@@ -10,11 +10,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# Fixed imports for newer LangChain versions
 from langchain_mistralai import MistralAIEmbeddings
 from langchain_mistralai import ChatMistralAI
 from langchain_astradb import AstraDBVectorStore
-from langchain_community.vectorstores import AstraDB
 from langchain.chains import create_retrieval_chain, create_history_aware_retriever
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -44,10 +42,11 @@ ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
 ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
+
 # --- Pydantic Models ---
 class QuestionRequest(BaseModel):
     question: str
-    collection_name: str = "doc_store"
+    collection_name: str = "pdf_docs"
     session_id: str = "default"
 
 class DocumentUploadResponse(BaseModel):
@@ -72,11 +71,11 @@ chat_histories = {}
 def create_astra_db_connection(collection_name: str, embeddings_model: MistralAIEmbeddings):
     """Create AstraDB connection with retry logic for hibernation handling"""
     try:
-        vector_store = AstraDB(
+        vector_store = AstraDBVectorStore(
             collection_name=collection_name,
             embedding=embeddings_model,
             api_endpoint=ASTRA_DB_API_ENDPOINT,
-            token=ASTRA_DB_APPLICATION_TOKEN,
+            token=ASTRA_DB_APPLICATION_TOKEN,   
         )
         # Test the connection by trying to access the collection
         vector_store._collection.find_one()
@@ -92,7 +91,7 @@ def create_astra_db_connection(collection_name: str, embeddings_model: MistralAI
     wait=wait_exponential(multiplier=1, min=2, max=8),
     retry=retry_if_exception_type((requests.exceptions.RequestException, ConnectionError, TimeoutError))
 )
-def add_documents_with_retry(vector_store: AstraDB, documents: List[Document], ids: List[str]):
+def add_documents_with_retry(vector_store: AstraDBVectorStore, documents: List[Document], ids: List[str]):
     """Add documents to AstraDB with retry logic"""
     try:
         vector_store.add_documents(documents=documents, ids=ids)
@@ -153,7 +152,7 @@ async def health_check():
 @app.post("/upload-documents", response_model=DocumentUploadResponse)
 async def upload_documents(
     files: List[UploadFile] = File(...),
-    collection_name: str = "doc_store",
+    collection_name: str = "pdf_docs",
     chunk_strategy: str = "Recursive",
     chunk_size: int = 1000,
     chunk_overlap: int = 200
@@ -196,12 +195,7 @@ async def upload_documents(
         chunked_docs = intelligent_chunk_documents(all_docs, chunk_strategy, embeddings_model, chunk_size, chunk_overlap)
 
         # Create AstraDB connection and add documents
-        vectorstore = AstraDBVectorStore(
-            collection_name="pdf_docs",
-            embedding=embedding,
-            token=ASTRA_DB_APPLICATION_TOKEN,
-            api_endpoint=ASTRA_DB_ENDPOINT
-        )
+        vector_store = create_astra_db_connection(collection_name, embeddings_model)
         uuids = [str(uuid4()) for _ in range(len(chunked_docs))]
         add_documents_with_retry(vector_store, chunked_docs, uuids)
 
@@ -227,7 +221,12 @@ async def ask_question(request: QuestionRequest):
         embeddings_model = MistralAIEmbeddings(model="mistral-embed")
         
         # Create AstraDB connection
-        vector_store = create_astra_db_connection(request.collection_name, embeddings_model)
+        vector_store = AstraDBVectorStore(
+            collection_name="pdf_docs",
+            api_endpoint=ASTRA_DB_API_ENDPOINT,
+            token=ASTRA_DB_APPLICATION_TOKEN,
+            embedding=embeddings_model
+        )
         retriever = vector_store.as_retriever(search_type="mmr", search_kwargs={"k": 4})
 
         # Create history-aware retriever
@@ -297,7 +296,7 @@ async def list_collections():
         embeddings_model = MistralAIEmbeddings(model="mistral-embed")
         # This would need to be implemented based on your AstraDB setup
         # For now, return a placeholder
-        return {"collections": ["doc_store"]}
+        return {"collections": ["pdf_docs"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list collections: {str(e)}")
 
