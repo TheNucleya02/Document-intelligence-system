@@ -78,8 +78,6 @@ streamlit run frontend/app.py --server.port 8501
 .
 ├── backend/
 │   ├── main.py          # FastAPI app
-│   ├── routes/          # API routes
-│   ├── services/        # Document & QA logic
 │
 ├── frontend/
 │   └── app.py           # Streamlit UI
