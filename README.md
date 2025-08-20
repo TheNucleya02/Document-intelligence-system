@@ -49,12 +49,7 @@ MISTRAL_API_KEY=your_mistral_api_key
 
 ### 3️⃣ Run the Application  
 
-#### Option A: With helper script  
-```bash
-python run.py
-```
-
-#### Option B: Manually in separate terminals  
+#### Manually in separate terminals  
 ```bash
 # Terminal 1 - Backend
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
