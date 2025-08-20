@@ -28,6 +28,8 @@ Upload your PDFs or DOCX files and interact with them using **Mistral AI** with 
 ---
 
 ## Screenshots
+<img width="1428" height="818" alt="Screenshot 2025-08-21 at 12 53 24 AM" src="https://github.com/user-attachments/assets/36895dca-e964-42da-834d-0ed9ef977705" />
+
 
 
 ## ⚡ Quick Start  
