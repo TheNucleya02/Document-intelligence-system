@@ -78,7 +78,7 @@ def create_astra_db_connection(collection_name: str, embeddings_model: MistralAI
             token=ASTRA_DB_APPLICATION_TOKEN,   
         )
         # Test the connection by trying to access the collection
-        vector_store._collection.find_one()
+        vector_store.as_retriever()
         return vector_store
     except Exception as e:
         if "hibernate" in str(e).lower() or "connection" in str(e).lower():
