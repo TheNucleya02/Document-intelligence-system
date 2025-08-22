@@ -7,7 +7,7 @@ streamlit>=1.28.1,<2.0       # Streamlit supports Python 3.10 [oai_citation:17�
 pypdf>=3.17.4,<4.0           # PDF library (supports Py 3.10) [oai_citation:18‡pypi.org](https://pypi.org/project/pypdf/#:~:text=,image).
 python-docx>=1.2.0,<2.0      # Updated to latest fixed version (1.2.0+) [oai_citation:19‡security.snyk.io](https://security.snyk.io/package/pip/python-docx/1.1.0#:~:text=Database%20security.snyk.io%20%20python,latest%20non%20vulnerable%20version).
 docx2txt>=0.8,<1.0           # Text extraction from .docx files (latest 0.9).
-pillow>=10.1.0,<11.0
+pillow
 
 langchain>=0.2,<0.3          # LangChain 0.2.x series (Python >=3.9) [oai_citation:20‡pypi.org](https://pypi.org/project/langchain-community/#:~:text=,3.9).
 langchain-community>=0.2,<0.3
