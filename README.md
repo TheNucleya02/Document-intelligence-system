@@ -57,7 +57,7 @@ A powerful document question-answering system that allows users to upload PDF an
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/TheNucleya02/Document-intelligence-system.git
    cd pdf-qa-assistant
    ```
 
@@ -74,13 +74,12 @@ A powerful document question-answering system that allows users to upload PDF an
 
 4. **Set up environment variables**
    ```bash
-   cp .env.example .env
    # Edit .env file and add your MISTRAL_API_KEY
    ```
 
 5. **Run the FastAPI backend**
    ```bash
-   python app.py
+   uvicorn main:app --reload
    ```
 
 6. **Run the Streamlit frontend** (in a new terminal)
@@ -97,19 +96,22 @@ A powerful document question-answering system that allows users to upload PDF an
 Create a `requirements.txt` file with:
 
 ```
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
-python-dotenv==1.0.0
-streamlit==1.28.1
-requests==2.31.0
-langchain==0.0.340
-langchain-community==0.0.1
-langchain-mistralai==0.0.1
-chromadb==0.4.18
-pypdf==3.17.0
-docx2txt==0.8
-pydantic==2.5.0
+fastapi
+uvicorn
+pydantic
+python-multipart
+python-dotenv
+pypdf
+langchain
+langchain-community
+langchain-text-splitters
+langchain-mistralai
+langchain-chroma
+chromadb
+tenacity
+requests
+streamlit
+requests
 ```
 
 ## 🔧 Configuration
@@ -294,7 +296,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues or have questions:
 
-1. Check the [troubleshooting section](#-troubleshooting)
+1. connect at kr.amanjha@gmail.com
 2. Open an issue on GitHub
 3. Review the API documentation at `/docs`
 
