@@ -178,17 +178,16 @@ print(response.json())
 ## 📁 Project Structure
 
 ```
-pdf-qa-assistant/
-├── app.py                 # FastAPI backend
-├── streamlit_app.py       # Streamlit frontend
-├── requirements.txt       # Python dependencies
-├── .env                   # Environment variables
-├── .env.example          # Environment template
-├── .gitignore            # Git ignore rules
-├── README.md             # This file
-├── uploads/              # Uploaded files (gitignored)
-├── chroma_db/            # Vector database (gitignored)
-└── __pycache__/          # Python cache (gitignored)
+Document-intelligence-system/
+├── .gitignore
+├── backend/
+│   ├── main.py
+│   └── models.py
+├── frontend/
+│   └── app.py
+├── README.md
+└── requirements.txt
+
 ```
 
 ## 🔍 How It Works
