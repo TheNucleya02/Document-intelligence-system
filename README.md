@@ -1,0 +1,303 @@
+# 📚 PDF Q&A Assistant
+
+A powerful document question-answering system that allows users to upload PDF and DOCX files and ask questions about their content using advanced AI technology. Built with FastAPI backend and Streamlit frontend.
+
+## ✨ Features
+
+### 🚀 **Core Functionality**
+- **Multi-format Document Support**: Upload PDF and DOCX files
+- **Intelligent Text Chunking**: Smart document segmentation for optimal retrieval
+- **Conversational AI**: Ask follow-up questions with context awareness
+- **Source Attribution**: Get references to specific documents that informed the answer
+- **Session Management**: Maintain conversation history across interactions
+
+### 🎯 **Advanced Capabilities**
+- **Vector Database Storage**: Efficient document embedding using Chroma DB
+- **Semantic Search**: Find relevant information using Mistral AI embeddings
+- **RESTful API**: Well-documented FastAPI backend
+- **Modern UI**: Intuitive Streamlit web interface
+- **Real-time Processing**: Live document upload and processing feedback
+
+### 🔧 **Technical Features**
+- **Async Processing**: Non-blocking file uploads and queries
+- **Error Handling**: Comprehensive error management and user feedback
+- **CORS Support**: Cross-origin resource sharing enabled
+- **Health Monitoring**: API status checking and diagnostics
+- **Scalable Architecture**: Modular design for easy extension
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    HTTP/JSON    ┌──────────────────┐
+│   Streamlit     │ ◄──────────────► │    FastAPI       │
+│   Frontend      │                 │    Backend       │
+└─────────────────┘                 └──────────────────┘
+                                             │
+                                             ▼
+                                    ┌──────────────────┐
+                                    │   Chroma DB      │
+                                    │ Vector Storage   │
+                                    └──────────────────┘
+                                             │
+                                             ▼
+                                    ┌──────────────────┐
+                                    │   Mistral AI     │
+                                    │ Embeddings/LLM   │
+                                    └──────────────────┘
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.8+
+- Mistral AI API key
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd pdf-qa-assistant
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env file and add your MISTRAL_API_KEY
+   ```
+
+5. **Run the FastAPI backend**
+   ```bash
+   python app.py
+   ```
+
+6. **Run the Streamlit frontend** (in a new terminal)
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+
+7. **Open your browser**
+   - FastAPI Docs: http://localhost:8000/docs
+   - Streamlit App: http://localhost:8501
+
+## 📋 Requirements
+
+Create a `requirements.txt` file with:
+
+```
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+streamlit==1.28.1
+requests==2.31.0
+langchain==0.0.340
+langchain-community==0.0.1
+langchain-mistralai==0.0.1
+chromadb==0.4.18
+pypdf==3.17.0
+docx2txt==0.8
+pydantic==2.5.0
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+MISTRAL_API_KEY=your_mistral_api_key_here
+```
+
+### API Configuration
+
+The FastAPI backend runs on `http://localhost:8000` by default. Key endpoints:
+
+- `GET /` - API status
+- `GET /health` - Health check
+- `POST /upload-documents` - Upload documents
+- `POST /ask-question` - Ask questions
+- `GET /collections` - View collections
+- `DELETE /clear-documents` - Clear all documents
+
+## 📖 Usage
+
+### 1. Upload Documents
+- Use the Streamlit interface to upload PDF or DOCX files
+- Files are automatically processed and chunked
+- Vector embeddings are created and stored
+
+### 2. Ask Questions
+- Type your question in the chat interface
+- The system will search through your documents
+- Get AI-generated answers with source references
+
+### 3. Manage Sessions
+- Each conversation has a unique session ID
+- Start new sessions or clear chat history as needed
+- Conversation context is maintained within sessions
+
+## 🛠️ API Usage
+
+### Upload Documents
+```python
+import requests
+
+files = [('files', ('document.pdf', open('document.pdf', 'rb'), 'application/pdf'))]
+response = requests.post('http://localhost:8000/upload-documents', files=files)
+print(response.json())
+```
+
+### Ask Question
+```python
+import requests
+
+payload = {
+    "question": "What is the main topic of the document?",
+    "session_id": "unique-session-id"
+}
+response = requests.post('http://localhost:8000/ask-question', json=payload)
+print(response.json())
+```
+
+## 📁 Project Structure
+
+```
+pdf-qa-assistant/
+├── app.py                 # FastAPI backend
+├── streamlit_app.py       # Streamlit frontend
+├── requirements.txt       # Python dependencies
+├── .env                   # Environment variables
+├── .env.example          # Environment template
+├── .gitignore            # Git ignore rules
+├── README.md             # This file
+├── uploads/              # Uploaded files (gitignored)
+├── chroma_db/            # Vector database (gitignored)
+└── __pycache__/          # Python cache (gitignored)
+```
+
+## 🔍 How It Works
+
+1. **Document Upload**: Files are uploaded via the Streamlit interface
+2. **Text Extraction**: PyPDF and docx2txt extract text from documents
+3. **Chunking**: RecursiveCharacterTextSplitter creates manageable text chunks
+4. **Embedding**: Mistral AI creates vector embeddings for each chunk
+5. **Storage**: Chroma DB stores embeddings with metadata
+6. **Query Processing**: User questions are embedded and matched against stored chunks
+7. **Answer Generation**: Mistral AI generates answers using retrieved context
+8. **Response**: Answer is returned with source attribution
+
+## 🎨 Features Showcase
+
+### Smart Document Processing
+- Automatic file type detection
+- Intelligent text chunking with overlap
+- Metadata preservation for source tracking
+
+### Advanced Search
+- Semantic similarity search using vector embeddings
+- Context-aware question reformulation
+- Multi-document information synthesis
+
+### User Experience
+- Real-time upload progress
+- Interactive chat interface
+- Source document references
+- Session management
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**API Connection Error**
+- Ensure FastAPI server is running on port 8000
+- Check if MISTRAL_API_KEY is properly set
+
+**Upload Failures**
+- Verify file formats (PDF, DOCX only)
+- Check file size limitations
+- Ensure sufficient disk space
+
+**Empty Responses**
+- Confirm documents were successfully uploaded
+- Try rephrasing your question
+- Check if the question relates to uploaded content
+
+### Logs and Debugging
+
+Enable debug mode in FastAPI:
+```python
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
+```
+
+## 🚀 Deployment
+
+### Docker (Optional)
+
+Create a `Dockerfile`:
+```dockerfile
+FROM python:3.9
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Production Considerations
+
+- Use a production WSGI server (Gunicorn + Uvicorn)
+- Set up proper logging
+- Configure environment-specific settings
+- Implement authentication if needed
+- Set up monitoring and health checks
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Mistral AI** for providing powerful language models and embeddings
+- **LangChain** for the excellent RAG framework
+- **Chroma DB** for efficient vector storage
+- **FastAPI** for the robust API framework
+- **Streamlit** for the intuitive frontend framework
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [troubleshooting section](#-troubleshooting)
+2. Open an issue on GitHub
+3. Review the API documentation at `/docs`
+
+---
+
+**Built with ❤️ using FastAPI, Streamlit, and Mistral AI**
