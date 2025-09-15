@@ -246,22 +246,65 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
 ```
 
-## 🚀 Deployment
+## 🚀 Deevlopment
 
-### Docker (Optional)
+### Run the Application
 
-Create a `Dockerfile`:
-```dockerfile
-FROM python:3.9
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd Document-intelligence-system
+   ```
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+2. **Start all services**
+   ```bash
+   docker-compose up --build
+   ```
 
-COPY . .
-EXPOSE 8000
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
-```
+3. **Access the application**
+   - Frontend (Streamlit): http://localhost:8501
+   - Backend (FastAPI): http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Development Commands
+
+```bash
+# Run in detached mode (background)
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f frontend
+docker-compose logs -f backend
+
+# Stop all services
+docker-compose down
+
+# Rebuild specific service
+docker-compose build backend
+docker-compose build frontend
+
+# Shell into container
+docker-compose exec backend bash
+docker-compose exec frontend bash
+
+## 🔧 Local Development (without Docker)
+
+If you prefer to run locally:
+
+1. **Backend**
+   ```bash
+   cd Backend
+   pip install -r requirements.txt
+   uvicorn main:app --reload --port 8000
+   ```
+
+2. **Frontend** (in another terminal)
+   ```bash
+   cd Frontend
+   pip install -r requirements.txt
+   export BACKEND_URL=http://localhost:8000
+   streamlit run app.py
+   ```
 
 ### Production Considerations
 
