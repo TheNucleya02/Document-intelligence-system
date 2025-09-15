@@ -14,5 +14,3 @@ chromadb
 
 tenacity
 requests
-streamlit
-requests
