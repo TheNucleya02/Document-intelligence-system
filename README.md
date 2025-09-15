@@ -176,19 +176,21 @@ print(response.json())
 ```
 
 ## 📁 Project Structure
-
-```
+'''
 Document-intelligence-system/
 ├── .gitignore
 ├── backend/
+│   ├── Dockerfile
 │   ├── main.py
-│   └── models.py
+│   ├── models.py
+│   └── requirements.txt
+├── docker-compose.yml
 ├── frontend/
-│   └── app.py
-├── README.md
-└── requirements.txt
-
-```
+│   ├── app.py
+│   ├── Dockerfile
+│   └── requirements.txt
+└── README.md
+'''
 
 ## 🔍 How It Works
 
@@ -246,13 +248,13 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
 ```
 
-## 🚀 Deevlopment
+## 🚀 Docker
 
 ### Run the Application
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/TheNucleya02/Document-intelligence-system.git
    cd Document-intelligence-system
    ```
 
@@ -286,25 +288,6 @@ docker-compose build frontend
 # Shell into container
 docker-compose exec backend bash
 docker-compose exec frontend bash
-
-## 🔧 Local Development (without Docker)
-
-If you prefer to run locally:
-
-1. **Backend**
-   ```bash
-   cd Backend
-   pip install -r requirements.txt
-   uvicorn main:app --reload --port 8000
-   ```
-
-2. **Frontend** (in another terminal)
-   ```bash
-   cd Frontend
-   pip install -r requirements.txt
-   export BACKEND_URL=http://localhost:8000
-   streamlit run app.py
-   ```
 
 ### Production Considerations
 
