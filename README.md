@@ -1,4 +1,4 @@
-# 📚 PDF Q&A Assistant
+# 📚 Document intelligence system
 
 A powerful document question-answering system that allows users to upload PDF and DOCX files and ask questions about their content using advanced AI technology. Built with FastAPI backend and Streamlit frontend.
 
