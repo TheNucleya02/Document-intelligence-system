@@ -17,4 +17,11 @@ COPY .env /code/.env
 
 RUN mkdir -p /code/uploads && mkdir -p /code/chroma_db
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Create the directories explicitly
+RUN mkdir -p /code/chroma_db /code/uploads
+
+# Grant permissions (brute force for safety in containers)
+RUN chmod -R 777 /code/chroma_db /code/uploads
+
+# GOOD - SQLite requires a single writer
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

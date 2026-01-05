@@ -1,16 +1,20 @@
 import os
+import shutil
 import time
 from uuid import uuid4
 from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 
-from app.core.models import QuestionRequest, QuestionResponse, DocumentUploadResponse
-from app.services.ingestion.loader import ensure_upload_dir
-from app.services.vector_store import process_and_store_files, get_vector_store, clear_vector_store
+from app.core.models import DocumentUploadResponse, QuestionRequest, QuestionResponse
+from app.core.jobs import create_job, get_job
+from app.services.ingestion.loader import ensure_upload_dir, process_upload_background_task
+from app.services.vector_store import clear_vector_store, process_and_store_files, get_vector_store
 from app.services.chat import get_conversational_chain
-from app.services.chat import chat_histories
 
 router = APIRouter()
+
+
+# --- Endpoints ---
 
 @router.get("/")
 async def root():
@@ -30,6 +34,51 @@ async def list_documents():
     data = vector_store._collection.get(include=["metadatas"])
     unique_files = set(meta['file_name'] for meta in data['metadatas'] if 'file_name' in meta)
     return {"files": list(unique_files)}
+
+@router.post("/documents")
+async def upload_documents(
+    background_tasks: BackgroundTasks, 
+    files: List[UploadFile] = File(...)
+):
+    """
+    Accepts files, creates a job ID, starts background processing, and returns immediately.
+    """
+    upload_dir = ensure_upload_dir()
+    saved_paths = []
+
+    # 1. Save files to disk (Fast I/O operation)
+    for file in files:
+        filename = f"{uuid4()}_{file.filename}"
+        file_path = os.path.join(upload_dir, filename)
+        with open(file_path, "wb") as f_out:
+            shutil.copyfileobj(file.file, f_out)
+        saved_paths.append(file_path)
+
+    # 2. Create Job ID
+    job_id = str(uuid4())
+    create_job(job_id)
+
+    # 3. Hand off to BackgroundTasks
+    background_tasks.add_task(process_upload_background_task, job_id, saved_paths)
+
+    # 4. Return immediately
+    return {
+        "job_id": job_id,
+        "message": "Upload accepted. Processing started in background.",
+        "status_url": f"/jobs/{job_id}"
+    }
+
+@router.get("/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    """
+    Endpoint for the UI to poll. Returns the current status of the background task.
+    """
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return job
+
 
 @router.delete("/documents/{filename}")
 async def delete_document(filename: str):
@@ -117,10 +166,3 @@ async def clear_documents_endpoint():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing documents: {str(e)}")
     
-
-@router.delete("/chat/{session_id}")
-async def reset_chat_history(session_id: str):
-    if session_id in chat_histories:
-        del chat_histories[session_id]
-        return {"message": f"History cleared for session {session_id}"}
-    raise HTTPException(status_code=404, detail="Session ID not found")

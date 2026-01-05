@@ -7,11 +7,48 @@ from app.core.config import settings
 
 # Import our new OCR processor
 from app.services.ocr.processor import ocr_pdf, ocr_image_file
+from app.core.jobs import JobStatus, update_job_status
+# Removed: from app.services.vector_store import process_and_store_files  # Circular import
 
 def ensure_upload_dir() -> str:
     path = Path(settings.UPLOAD_DIR)
     path.mkdir(parents=True, exist_ok=True)
     return str(path)
+
+# --- Background Task Function ---
+def process_upload_background_task(job_id: str, file_paths: List[str]):
+    """
+    This function runs in the background. It performs the heavy lifting:
+    OCR -> Chunking -> Embedding -> ChromaDB
+    """
+    try:
+        print(f"[{job_id}] Starting background processing for {len(file_paths)} files...")
+        update_job_status(job_id, JobStatus.PROCESSING)
+        
+        # Import here to avoid circular import
+        from app.services.vector_store import process_and_store_files
+        
+        # This is the heavy function from your vector_store.py
+        chunks_added = process_and_store_files(file_paths)
+        
+        result = {
+            "message": "Files processed and stored successfully",
+            "chunks_added": chunks_added,
+            "files_processed": len(file_paths)
+        }
+        
+        update_job_status(job_id, JobStatus.COMPLETED, result=result)
+        print(f"[{job_id}] Processing complete.")
+        
+    except Exception as e:
+        print(f"[{job_id}] Processing failed: {e}")
+        update_job_status(job_id, JobStatus.FAILED, error=str(e))
+    finally:
+        # Optional: Clean up temp files if you don't want to keep them on disk forever
+        for path in file_paths:
+            if os.path.exists(path):
+                os.remove(path)
+
 
 def load_docs_from_path(path: str) -> List[Document]:
     suffix = Path(path).suffix.lower()
