@@ -12,41 +12,82 @@ from app.services.vector_store import get_vector_store
 # In-memory history (for production, consider Redis)
 chat_histories = {}
 
+
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
     if session_id not in chat_histories:
         chat_histories[session_id] = ChatMessageHistory()
     return chat_histories[session_id]
 
-def get_conversational_chain():
+
+def get_conversational_chain(filter: dict):
+    """
+    Creates a RAG chain that ONLY searches documents matching the given metadata filter.
+
+    Example filter:
+    {
+        "document_id": {"$in": ["doc1", "doc2", ...]}
+    }
+    """
     model = ChatMistralAI(
         model="mistral-large-latest",
         temperature=0.4,
         max_retries=2,
     )
-    
-    vector_store = get_vector_store()
-    retriever = vector_store.as_retriever(search_kwargs={"k": 4})
 
-    # Contextualize question prompt
-    contextualize_q_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Given the chat history and the latest user question, formulate a standalone question that can be understood without the chat history. Do NOT answer the question, just reformulate it if needed."),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ])
-    
-    history_aware_retriever = create_history_aware_retriever(
-        model, retriever, contextualize_q_prompt
+    vector_store = get_vector_store()
+
+    # 🔐 CRITICAL: Filtered retriever
+    retriever = vector_store.as_retriever(
+        search_kwargs={
+            "k": 4,
+            "filter": filter,
+        }
     )
 
-    # QA prompt
-    qa_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Keep the answer concise.\n\n{context}"),
+    # -----------------------------
+    # Contextualize Question Prompt
+    # -----------------------------
+
+    contextualize_q_prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            "Given the chat history and the latest user question, formulate a standalone question that can be understood without the chat history. "
+            "Do NOT answer the question, just reformulate it if needed."
+        ),
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
     ])
-    
+
+    history_aware_retriever = create_history_aware_retriever(
+        model,
+        retriever,
+        contextualize_q_prompt,
+    )
+
+    # -----------------------------
+    # QA Prompt
+    # -----------------------------
+
+    qa_prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. "
+            "If you don't know the answer, just say that you don't know. Keep the answer concise.\n\n{context}"
+        ),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ])
+
     question_answer_chain = create_stuff_documents_chain(model, qa_prompt)
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+
+    rag_chain = create_retrieval_chain(
+        history_aware_retriever,
+        question_answer_chain,
+    )
+
+    # -----------------------------
+    # Wrap With Message History
+    # -----------------------------
 
     return RunnableWithMessageHistory(
         rag_chain,

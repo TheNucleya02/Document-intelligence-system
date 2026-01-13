@@ -3,166 +3,242 @@ import shutil
 import time
 from uuid import uuid4
 from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import Request
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
 
-from app.core.models import DocumentUploadResponse, QuestionRequest, QuestionResponse
+from app.core.auth import get_current_user
+from app.core.supabase import supabase
 from app.core.jobs import create_job, get_job
+
 from app.services.ingestion.loader import ensure_upload_dir, process_upload_background_task
-from app.services.vector_store import clear_vector_store, process_and_store_files, get_vector_store
+from app.services.vector_store import get_vector_store
 from app.services.chat import get_conversational_chain
+from app.services.extraction.extractor import analyze_document_structure
+from app.core.limiter import limiter
+from app.core.models import QuestionRequest, QuestionResponse
 
 router = APIRouter()
 
 
-# --- Endpoints ---
-
-@router.get("/")
-async def root():
-    return {"message": "PDF Q&A API is running"}
+# --------------------
+# Health
+# --------------------
 
 @router.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": time.time()}
 
+
+# --------------------
+# Documents
+# --------------------
+
 @router.get("/documents")
-async def list_documents():
-    """List all unique filenames in the vector store."""
-    vector_store = get_vector_store()
-    # Note: This is an expensive operation in Chroma if not optimized.
-    # A lighter approach is maintaining a separate SQL table for file tracking.
-    # For now, we fetch metadata:
-    data = vector_store._collection.get(include=["metadatas"])
-    unique_files = set(meta['file_name'] for meta in data['metadatas'] if 'file_name' in meta)
-    return {"files": list(unique_files)}
+async def list_documents(user_id: str = Depends(get_current_user)):
+    """
+    List all documents belonging to the current user (from SQL, not Chroma).
+    """
+    result = (
+        supabase.table("documents")
+        .select("*")
+        .eq("owner_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return result.data
+
 
 @router.post("/documents")
+@limiter.limit("5/minute")
 async def upload_documents(
-    background_tasks: BackgroundTasks, 
-    files: List[UploadFile] = File(...)
+    request: Request,
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    user_id: str = Depends(get_current_user),
 ):
     """
-    Accepts files, creates a job ID, starts background processing, and returns immediately.
+    Upload documents, create one job per document, return immediately.
     """
     upload_dir = ensure_upload_dir()
-    saved_paths = []
 
-    # 1. Save files to disk (Fast I/O operation)
+    responses = []
+
     for file in files:
-        filename = f"{uuid4()}_{file.filename}"
-        file_path = os.path.join(upload_dir, filename)
+        # 1. Save file
+        stored_filename = f"{uuid4()}_{file.filename}"
+        file_path = os.path.join(upload_dir, stored_filename)
+
         with open(file_path, "wb") as f_out:
             shutil.copyfileobj(file.file, f_out)
-        saved_paths.append(file_path)
 
-    # 2. Create Job ID
-    job_id = str(uuid4())
-    create_job(job_id)
+        # 2. Create document row
+        document_id = str(uuid4())
 
-    # 3. Hand off to BackgroundTasks
-    background_tasks.add_task(process_upload_background_task, job_id, saved_paths)
+        supabase.table("documents").insert({
+            "id": document_id,
+            "filename": file.filename,
+            "status": "processing",
+            "owner_id": user_id,
+        }).execute()
 
-    # 4. Return immediately
+        # 3. Create job
+        job_id = str(uuid4())
+        create_job(job_id)
+
+        # 4. Start background ingestion
+        background_tasks.add_task(
+            process_upload_background_task,
+            job_id=job_id,
+            file_paths=[file_path],
+            document_id=document_id,   # 👈 IMPORTANT: pass document_id
+        )
+
+        responses.append({
+            "document_id": document_id,
+            "job_id": job_id,
+            "filename": file.filename,
+        })
+
     return {
-        "job_id": job_id,
-        "message": "Upload accepted. Processing started in background.",
-        "status_url": f"/jobs/{job_id}"
+        "message": "Upload accepted. Processing started.",
+        "items": responses,
     }
 
-@router.get("/jobs/{job_id}")
-async def get_job_status(job_id: str):
+
+@router.delete("/documents/{document_id}")
+async def delete_document(
+    request: Request,
+    document_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """
-    Endpoint for the UI to poll. Returns the current status of the background task.
+    Delete a document:
+    - Verify ownership
+    - Delete from vector store
+    - Delete from SQL
+    """
+    # 1. Check ownership
+    doc = (
+        supabase.table("documents")
+        .select("*")
+        .eq("id", document_id)
+        .eq("owner_id", user_id)
+        .single()
+        .execute()
+    )
+
+    if not doc.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # 2. Delete from vector store
+    vector_store = get_vector_store()
+    vector_store._collection.delete(where={"document_id": document_id})
+
+    # 3. Delete from SQL
+    supabase.table("documents").delete().eq("id", document_id).execute()
+
+    return {"message": "Document deleted successfully"}
+
+
+# --------------------
+# Jobs
+# --------------------
+
+@router.get("/jobs/{job_id}")
+@limiter.limit("60/minute")
+async def get_job_status(
+    request: Request,
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Poll job status.
+    (Later you should also store job ownership in DB.)
     """
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    
+
     return job
 
 
-@router.delete("/documents/{filename}")
-async def delete_document(filename: str):
-    """Delete a specific file from the index."""
-    vector_store = get_vector_store()
-    try:
-        # Delete items where metadata 'file_name' matches
-        vector_store._collection.delete(where={"file_name": filename})
-        return {"message": f"Document '{filename}' deleted."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@router.post("/documents", response_model=DocumentUploadResponse)
-async def upload_documents(files: List[UploadFile] = File(...)):
-    try:
-        upload_dir = ensure_upload_dir()
-        saved_paths = []
-        original_filenames = []
-
-        for file in files:
-            filename = f"{uuid4()}_{file.filename}"
-            file_path = os.path.join(upload_dir, filename)
-            with open(file_path, "wb") as f_out:
-                f_out.write(await file.read())
-            saved_paths.append(file_path)
-            original_filenames.append(file.filename)
-
-        chunks_added = process_and_store_files(saved_paths, original_filenames)
-
-        return DocumentUploadResponse(
-            message="Files processed and stored.",
-            chunks_count=chunks_added,
-            files_count=len(files),
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process documents: {str(e)}")
+# --------------------
+# Chat
+# --------------------
 
 @router.post("/chat", response_model=QuestionResponse)
-async def ask_question(request: QuestionRequest):
-    try:
-        # Check if DB exists
-        try:
-            vector_store = get_vector_store()
-            if vector_store._collection.count() == 0:
-                 raise HTTPException(status_code=404, detail="No documents found. Please upload first.")
-        except Exception:
-             raise HTTPException(status_code=404, detail="No documents found. Please upload first.")
+@limiter.limit("20/minute")
+async def ask_question(
+    request: Request,
+    req: QuestionRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Ask question over ONLY the current user's documents.
+    """
+    # 1. Get user's document IDs
+    docs = (
+        supabase.table("documents")
+        .select("id")
+        .eq("owner_id", user_id)
+        .execute()
+    )
 
-        chain = get_conversational_chain()
-        
-        response = chain.invoke(
-            {"input": request.question},
-            config={"configurable": {"session_id": request.session_id}},
-        )
+    document_ids = [d["id"] for d in docs.data]
 
-        sources = []
-        if "context" in response:
-            for doc in response["context"]:
-                if hasattr(doc, 'metadata') and 'file_name' in doc.metadata:
-                    sources.append(doc.metadata['file_name'])
-        
-        sources = list(dict.fromkeys(sources))
-        return QuestionResponse(answer=response["answer"], sources=sources)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+    if not document_ids:
+        raise HTTPException(status_code=404, detail="No documents found")
 
-@router.get("/collections")
-async def list_collections():
-    try:
-        vector_store = get_vector_store()
-        doc_count = vector_store._collection.count()
-        return {"collections": [{"name": vector_store._collection.name, "document_count": doc_count}]}
-    except Exception as e:
-        return {"collections": [], "error": str(e)}
+    # 2. Run retrieval filtered by document_id
+    chain = get_conversational_chain(
+        filter={"document_id": {"$in": document_ids}}
+    )
 
-@router.delete("/clear-documents")
-async def clear_documents_endpoint():
-    try:
-        if clear_vector_store():
-             return {"message": "All documents cleared successfully"}
-        return {"message": "No documents to clear"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error clearing documents: {str(e)}")
-    
+    response = chain.invoke(
+        {"input": request.question},
+        config={"configurable": {"session_id": request.session_id}},
+    )
+
+    sources = []
+    if "context" in response:
+        for doc in response["context"]:
+            if hasattr(doc, "metadata") and "document_id" in doc.metadata:
+                sources.append(doc.metadata["document_id"])
+
+    sources = list(dict.fromkeys(sources))
+
+    return QuestionResponse(answer=response["answer"], sources=sources)
+
+
+# --------------------
+# Analysis
+# --------------------
+
+@router.post("/documents/{document_id}/analyze")
+@limiter.limit("5/minute")
+async def analyze_document(
+    request: Request,
+    document_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Analyze ONE document belonging to the user.
+    """
+    # 1. Check ownership
+    doc = (
+        supabase.table("documents")
+        .select("*")
+        .eq("id", document_id)
+        .eq("owner_id", user_id)
+        .single()
+        .execute()
+    )
+
+    if not doc.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # 2. Run analysis (you should later pass document_id into this)
+    analysis = analyze_document_structure(document_id=document_id)
+
+    return analysis
