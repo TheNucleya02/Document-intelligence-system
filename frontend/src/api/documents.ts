@@ -14,10 +14,12 @@ export async function getDocuments(): Promise<Document[]> {
   return apiGet("/documents", DocumentListSchema);
 }
 
-export async function uploadDocument(file: File): Promise<UploadDocumentResponse> {
+export async function uploadDocuments(files: File[]): Promise<UploadDocumentResponse> {
   const formData = new FormData();
-  formData.append("file", file);
-  
+  files.forEach((file) => {
+    formData.append("files", file); // ✅ correct key
+  });
+
   return apiPostFormData("/documents", formData, UploadDocumentResponseSchema);
 }
 

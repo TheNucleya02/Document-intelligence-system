@@ -52,9 +52,9 @@ async def list_documents(user_id: str = Depends(get_current_user)):
 @router.post("/documents")
 @limiter.limit("5/minute")
 async def upload_documents(
-    request: Request,
-    background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
+    background_tasks: BackgroundTasks = None,
+    request: Request = None,
     user_id: str = Depends(get_current_user),
 ):
     """

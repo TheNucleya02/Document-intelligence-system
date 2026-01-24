@@ -10,6 +10,7 @@ def get_current_user(
     request: Request,
     authorization: str | None = Header(None)
 ):
+    
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid Authorization header")
 
