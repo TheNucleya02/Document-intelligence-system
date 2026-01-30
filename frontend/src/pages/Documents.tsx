@@ -23,8 +23,18 @@ export default function Documents() {
   const [analyzingDocumentId, setAnalyzingDocumentId] = useState<string>();
 
   const handleUpload = async (file: File) => {
-    await uploadMutation.mutateAsync(file);
+    const res = await uploadMutation.mutateAsync(file);
+
+    // Start polling job for first uploaded file
+    const item = res.items[0];
+    if (item?.job_id) {
+      startPolling(item.job_id);
+    }
+
+    // Refresh documents list
+    refetch();
   };
+
 
   const handleDelete = (documentId: string) => {
     deleteMutation.mutate(documentId);

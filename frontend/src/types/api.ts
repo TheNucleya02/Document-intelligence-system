@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-// Document schemas
+// --------------------
+// Documents
+// --------------------
+
 export const DocumentStatusSchema = z.enum([
-  "pending",
+  "uploaded",
   "processing",
   "ready",
   "error",
@@ -10,28 +13,36 @@ export const DocumentStatusSchema = z.enum([
 
 export const DocumentSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  filename: z.string(),
   status: DocumentStatusSchema,
   created_at: z.string(),
-  updated_at: z.string().optional(),
-  file_size: z.number().optional(),
-  file_type: z.string().optional(),
 });
 
 export const DocumentListSchema = z.array(DocumentSchema);
 
-export const UploadDocumentResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  status: DocumentStatusSchema,
-  message: z.string().optional(),
+// Upload response
+
+export const UploadItemSchema = z.object({
+  document_id: z.string(),
+  job_id: z.string(),
+  filename: z.string(),
 });
+
+export const UploadDocumentResponseSchema = z.object({
+  message: z.string(),
+  items: z.array(UploadItemSchema),
+});
+
+// Delete response
 
 export const DeleteDocumentResponseSchema = z.object({
   message: z.string(),
 });
 
-// Job schemas
+// --------------------
+// Jobs
+// --------------------
+
 export const JobStatusSchema = z.enum([
   "pending",
   "running",
@@ -40,58 +51,39 @@ export const JobStatusSchema = z.enum([
 ]);
 
 export const JobSchema = z.object({
-  id: z.string(),
   status: JobStatusSchema,
-  progress: z.number().optional(),
-  message: z.string().optional(),
-  result: z.unknown().optional(),
-  error: z.string().optional(),
-});
-
-export const AnalyzeDocumentResponseSchema = z.object({
-  job_id: z.string(),
   message: z.string().optional(),
 });
 
-// Chat schemas
-export const ChatMessageRoleSchema = z.enum(["user", "assistant", "system"]);
+// --------------------
+// Analyze
+// --------------------
 
-export const ChatMessageSchema = z.object({
-  role: ChatMessageRoleSchema,
-  content: z.string(),
-});
+export const AnalyzeDocumentResponseSchema = z.unknown(); 
+// Your backend returns arbitrary analysis JSON
 
-export const ChatRequestSchema = z.object({
-  message: z.string(),
-  document_ids: z.array(z.string()).optional(),
-});
+// --------------------
+// Chat
+// --------------------
 
 export const ChatResponseSchema = z.object({
-  response: z.string(),
-  sources: z.array(z.object({
-    document_id: z.string(),
-    document_name: z.string().optional(),
-    chunk: z.string().optional(),
-    score: z.number().optional(),
-  })).optional(),
+  answer: z.string(),
+  sources: z.array(z.string()),
 });
 
-// Health schemas
+// --------------------
+// Health
+// --------------------
+
 export const HealthStatusSchema = z.object({
   status: z.string(),
-  version: z.string().optional(),
-  uptime: z.number().optional(),
-  database: z.string().optional(),
-  vector_store: z.string().optional(),
+  timestamp: z.number(),
 });
 
-// API Error schema
-export const ApiErrorSchema = z.object({
-  detail: z.string().optional(),
-  message: z.string().optional(),
-});
+// --------------------
+// Types
+// --------------------
 
-// Type exports
 export type Document = z.infer<typeof DocumentSchema>;
 export type DocumentStatus = z.infer<typeof DocumentStatusSchema>;
 export type DocumentList = z.infer<typeof DocumentListSchema>;
@@ -100,9 +92,5 @@ export type DeleteDocumentResponse = z.infer<typeof DeleteDocumentResponseSchema
 export type Job = z.infer<typeof JobSchema>;
 export type JobStatus = z.infer<typeof JobStatusSchema>;
 export type AnalyzeDocumentResponse = z.infer<typeof AnalyzeDocumentResponseSchema>;
-export type ChatMessage = z.infer<typeof ChatMessageSchema>;
-export type ChatMessageRole = z.infer<typeof ChatMessageRoleSchema>;
-export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 export type ChatResponse = z.infer<typeof ChatResponseSchema>;
 export type HealthStatus = z.infer<typeof HealthStatusSchema>;
-export type ApiError = z.infer<typeof ApiErrorSchema>;
