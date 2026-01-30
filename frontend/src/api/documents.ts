@@ -14,7 +14,7 @@ export async function getDocuments(): Promise<Document[]> {
   return apiGet("/documents", DocumentListSchema);
 }
 
-export async function uploadDocuments(files: File[]): Promise<UploadDocumentResponse> {
+export async function uploadDocument(files: File[]): Promise<UploadDocumentResponse> {
   const formData = new FormData();
   files.forEach((file) => {
     formData.append("files", file); // ✅ correct key

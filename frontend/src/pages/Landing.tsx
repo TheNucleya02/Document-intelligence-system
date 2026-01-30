@@ -14,12 +14,17 @@ export default function Landing() {
             </div>
             <span className="font-semibold">Document Intelligence</span>
           </div>
-          <Link to="/dashboard">
-            <Button>
-              Go to Dashboard
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/login">
+              <Button variant="ghost">Login</Button>
+            </Link>
+            <Link to="/register">
+              <Button>
+                Get Started
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -29,8 +34,9 @@ export default function Landing() {
           Intelligent Document Analysis & Q&A
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Upload your documents and get instant answers. Our RAG-powered system analyzes
-          your files and enables natural language conversations with your data.
+          Upload your documents and get instant answers. Our RAG-powered system
+          analyzes your files and enables natural language conversations with
+          your data.
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link to="/dashboard">

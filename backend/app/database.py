@@ -5,7 +5,7 @@ from sqlalchemy.pool import QueuePool
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://user:password@localhost:5432/document_intelligence"
+    "sqlite:///./document_intelligence.db"
 )
 
 if DATABASE_URL.startswith("postgresql://"):

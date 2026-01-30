@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 // --------------------
+// API Error
+// --------------------
+
+export const ApiErrorSchema = z.object({
+  detail: z.string().optional(),
+  message: z.string().optional(),
+  type: z.string().optional(),
+});
+
+// --------------------
 // Documents
 // --------------------
 
