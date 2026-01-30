@@ -1,27 +1,23 @@
 FROM python:3.10-slim
 
-WORKDIR /code
+WORKDIR /app
 
-# Install Tesseract and Poppler (required for pdf2image)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     poppler-utils \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt /code/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
-COPY ./app /code/app
-COPY .env /code/.env
+COPY ./app /app/app
+COPY ./migrations.py /app/migrations.py
+COPY .env /app/.env
 
-RUN mkdir -p /code/uploads && mkdir -p /code/chroma_db
+RUN mkdir -p /app/uploads && mkdir -p /app/chroma_db
+RUN chmod -R 777 /app/chroma_db /app/uploads
 
-# Create the directories explicitly
-RUN mkdir -p /code/chroma_db /code/uploads
+EXPOSE 8000
 
-# Grant permissions (brute force for safety in containers)
-RUN chmod -R 777 /code/chroma_db /code/uploads
-
-# GOOD - SQLite requires a single writer
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["sh", "-c", "python migrations.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"]

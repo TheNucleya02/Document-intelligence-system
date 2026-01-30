@@ -1,6 +1,6 @@
-# 📚 Document intelligence system
+# 📚 Document Intelligence System
 
-A powerful document question-answering system that allows users to upload PDF and DOCX files and ask questions about their content using advanced AI technology. Built with FastAPI backend and Streamlit frontend.
+A production-ready document question-answering system that allows users to upload PDF and DOCX files and ask questions about their content using advanced AI technology. Built with FastAPI backend, React frontend, and PostgreSQL database.
 
 ## ✨ Features
 
@@ -11,320 +11,148 @@ A powerful document question-answering system that allows users to upload PDF an
 - **Source Attribution**: Get references to specific documents that informed the answer
 - **Session Management**: Maintain conversation history across interactions
 
-### 🎯 **Advanced Capabilities**
-- **Vector Database Storage**: Efficient document embedding using Chroma DB
-- **Semantic Search**: Find relevant information using Mistral AI embeddings
-- **RESTful API**: Well-documented FastAPI backend
-- **Modern UI**: Intuitive Streamlit web interface
-- **Real-time Processing**: Live document upload and processing feedback
+### 🔐 **Security & Authentication**
+- **JWT Authentication**: Secure token-based authentication
+- **User Registration & Login**: Email + password based authentication
+- **Bcrypt Password Hashing**: Industry-standard password security
+- **Token Refresh Mechanism**: Automatic token rotation
+- **Document Ownership**: Users can only access their documents
 
-### 🔧 **Technical Features**
-- **Async Processing**: Non-blocking file uploads and queries
-- **Error Handling**: Comprehensive error management and user feedback
-- **CORS Support**: Cross-origin resource sharing enabled
-- **Health Monitoring**: API status checking and diagnostics
-- **Scalable Architecture**: Modular design for easy extension
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    HTTP/JSON    ┌──────────────────┐
-│   Streamlit     │ ◄──────────────► │    FastAPI       │
-│   Frontend      │                 │    Backend       │
-└─────────────────┘                 └──────────────────┘
-                                             │
-                                             ▼
-                                    ┌──────────────────┐
-                                    │   Chroma DB      │
-                                    │ Vector Storage   │
-                                    └──────────────────┘
-                                             │
-                                             ▼
-                                    ┌──────────────────┐
-                                    │   Mistral AI     │
-                                    │ Embeddings/LLM   │
-                                    └──────────────────┘
-```
+### 🎯 **Production Ready**
+- **PostgreSQL Database**: Scalable relational database
+- **Docker Compose**: Easy deployment and development setup
+- **Connection Pooling**: Optimized database connections
+- **Error Handling**: Comprehensive error management
+- **Health Monitoring**: API status and diagnostics
+- **RESTful API**: Well-documented with Swagger UI
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-- Python 3.8+
+- Docker & Docker Compose OR Python 3.10+, Node.js 18+
 - Mistral AI API key
 
-### Installation
+### With Docker Compose (Recommended)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/TheNucleya02/Document-intelligence-system.git
-   cd pdf-qa-assistant
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
-   ```bash
-   # Edit .env file and add your MISTRAL_API_KEY
-   ```
-
-5. **Run the FastAPI backend**
-   ```bash
-   uvicorn main:app --reload
-   ```
-
-6. **Run the Streamlit frontend** (in a new terminal)
-   ```bash
-   streamlit run streamlit_app.py
-   ```
-
-7. **Open your browser**
-   - FastAPI Docs: http://localhost:8000/docs
-   - Streamlit App: http://localhost:8501
-
-## 📋 Requirements
-
-Create a `requirements.txt` file with:
-
-```
-fastapi
-uvicorn
-pydantic
-python-multipart
-python-dotenv
-pypdf
-langchain
-langchain-community
-langchain-text-splitters
-langchain-mistralai
-langchain-chroma
-chromadb
-tenacity
-requests
-streamlit
-requests
+```bash
+git clone <repo-url> && cd document-intelligence
+echo "MISTRAL_API_KEY=your-key-here" > .env
+docker-compose up --build
 ```
 
-## 🔧 Configuration
+**Access:**
+- Frontend: http://localhost:5173
+- API Docs: http://localhost:8000/docs
 
-### Environment Variables
+### Without Docker
 
-Create a `.env` file in the project root:
+**Backend:**
+```bash
+cd backend && pip install -r requirements.txt
+python migrations.py
+uvicorn app.main:app --reload
+```
 
+**Frontend:**
+```bash
+cd frontend && npm install && npm run dev
+```
+
+## 🔐 Authentication
+
+```bash
+# Register
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "secure123"}'
+
+# Login
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "secure123"}'
+
+# Use token in requests
+curl -H "Authorization: Bearer <token>" http://localhost:8000/documents
+```
+
+## 📋 API Endpoints
+
+**Auth:** `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`
+
+**Documents:** `GET/POST /documents`, `DELETE /documents/{id}`, `POST /documents/{id}/analyze`
+
+**Chat:** `POST /chat`, `GET /jobs/{id}`, `GET /health`
+
+## 🏗️ Architecture
+
+```
+Frontend (React)   ←HTTP/JWT→   Backend (FastAPI)   ←→   PostgreSQL
+                                      ↓
+                            Chroma DB + Mistral AI
+```
+
+## 🐳 Services
+
+- **PostgreSQL**: User & document storage
+- **FastAPI**: REST API with Swagger at `/docs`
+- **React**: Frontend with TypeScript & Tailwind
+
+## 🔒 Security
+
+- JWT (15min access, 7day refresh tokens)
+- Bcrypt password hashing
+- CORS & rate limiting
+- Document ownership enforcement
+
+## 📁 Key Files
+
+```
+backend/
+├── app/database.py          # SQLAlchemy setup
+├── app/models.py            # ORM models
+├── app/core/security.py     # JWT & auth
+├── app/api/auth.py          # Auth routes
+└── migrations.py            # DB setup
+
+frontend/
+├── src/api/auth.ts          # Auth client
+├── src/api/client.ts        # API wrapper
+└── src/pages/               # React pages
+```
+
+## 🚀 Deployment
+
+**Environment Variables:**
 ```env
-MISTRAL_API_KEY=your_mistral_api_key_here
+DATABASE_URL=postgresql://user:pass@host:5432/db
+SECRET_KEY=your-secret-key-here
+MISTRAL_API_KEY=your-api-key
+VITE_API_BASE_URL=https://api.yourdomain.com
 ```
 
-### API Configuration
+## 🛠️ Commands
 
-The FastAPI backend runs on `http://localhost:8000` by default. Key endpoints:
-
-- `GET /` - API status
-- `GET /health` - Health check
-- `POST /upload-documents` - Upload documents
-- `POST /ask-question` - Ask questions
-- `GET /collections` - View collections
-- `DELETE /clear-documents` - Clear all documents
-
-## 📖 Usage
-
-### 1. Upload Documents
-- Use the Streamlit interface to upload PDF or DOCX files
-- Files are automatically processed and chunked
-- Vector embeddings are created and stored
-
-### 2. Ask Questions
-- Type your question in the chat interface
-- The system will search through your documents
-- Get AI-generated answers with source references
-
-### 3. Manage Sessions
-- Each conversation has a unique session ID
-- Start new sessions or clear chat history as needed
-- Conversation context is maintained within sessions
-
-## 🛠️ API Usage
-
-### Upload Documents
-```python
-import requests
-
-files = [('files', ('document.pdf', open('document.pdf', 'rb'), 'application/pdf'))]
-response = requests.post('http://localhost:8000/upload-documents', files=files)
-print(response.json())
+```bash
+docker-compose logs -f backend           # Logs
+docker-compose exec postgres psql ...    # Database CLI
+docker-compose down -v                   # Reset all
+npm run build                            # Build frontend
 ```
 
-### Ask Question
-```python
-import requests
+## 📖 Documentation
 
-payload = {
-    "question": "What is the main topic of the document?",
-    "session_id": "unique-session-id"
-}
-response = requests.post('http://localhost:8000/ask-question', json=payload)
-print(response.json())
-```
-
-## 📁 Project Structure
-'''
-Document-intelligence-system/
-├── .gitignore
-├── backend/
-│   ├── Dockerfile
-│   ├── main.py
-│   ├── models.py
-│   └── requirements.txt
-├── docker-compose.yml
-├── frontend/
-│   ├── app.py
-│   ├── Dockerfile
-│   └── requirements.txt
-└── README.md
-'''
-
-## 🔍 How It Works
-
-1. **Document Upload**: Files are uploaded via the Streamlit interface
-2. **Text Extraction**: PyPDF and docx2txt extract text from documents
-3. **Chunking**: RecursiveCharacterTextSplitter creates manageable text chunks
-4. **Embedding**: Mistral AI creates vector embeddings for each chunk
-5. **Storage**: Chroma DB stores embeddings with metadata
-6. **Query Processing**: User questions are embedded and matched against stored chunks
-7. **Answer Generation**: Mistral AI generates answers using retrieved context
-8. **Response**: Answer is returned with source attribution
-
-## 🎨 Features Showcase
-
-### Smart Document Processing
-- Automatic file type detection
-- Intelligent text chunking with overlap
-- Metadata preservation for source tracking
-
-### Advanced Search
-- Semantic similarity search using vector embeddings
-- Context-aware question reformulation
-- Multi-document information synthesis
-
-### User Experience
-- Real-time upload progress
-- Interactive chat interface
-- Source document references
-- Session management
+See [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) for detailed architecture documentation.
 
 ## 🐛 Troubleshooting
 
-### Common Issues
-
-**API Connection Error**
-- Ensure FastAPI server is running on port 8000
-- Check if MISTRAL_API_KEY is properly set
-
-**Upload Failures**
-- Verify file formats (PDF, DOCX only)
-- Check file size limitations
-- Ensure sufficient disk space
-
-**Empty Responses**
-- Confirm documents were successfully uploaded
-- Try rephrasing your question
-- Check if the question relates to uploaded content
-
-### Logs and Debugging
-
-Enable debug mode in FastAPI:
-```python
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
-```
-
-## 🚀 Docker
-
-### Run the Application
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/TheNucleya02/Document-intelligence-system.git
-   cd Document-intelligence-system
-   ```
-
-2. **Start all services**
-   ```bash
-   docker-compose up --build
-   ```
-
-3. **Access the application**
-   - Frontend (Streamlit): http://localhost:8501
-   - Backend (FastAPI): http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
-
-### Development Commands
-
-```bash
-# Run in detached mode (background)
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f frontend
-docker-compose logs -f backend
-
-# Stop all services
-docker-compose down
-
-# Rebuild specific service
-docker-compose build backend
-docker-compose build frontend
-
-# Shell into container
-docker-compose exec backend bash
-docker-compose exec frontend bash
-
-### Production Considerations
-
-- Use a production WSGI server (Gunicorn + Uvicorn)
-- Set up proper logging
-- Configure environment-specific settings
-- Implement authentication if needed
-- Set up monitoring and health checks
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**DB Connection Error**: Check `docker-compose ps`
+**401 Unauthorized**: Re-login, check token in DevTools
+**Port in Use**: Change port in `docker-compose.yml`
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Mistral AI** for providing powerful language models and embeddings
-- **LangChain** for the excellent RAG framework
-- **Chroma DB** for efficient vector storage
-- **FastAPI** for the robust API framework
-- **Streamlit** for the intuitive frontend framework
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. connect at kr.amanjha@gmail.com
-2. Open an issue on GitHub
-3. Review the API documentation at `/docs`
+MIT License
 
 ---
 
-**Built with ❤️ using FastAPI, Streamlit, and Mistral AI**
+**Production-ready. Scalable. Secure. Built with FastAPI, React, and PostgreSQL.**

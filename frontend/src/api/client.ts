@@ -68,19 +68,26 @@ export async function apiGet<T>(
   options?: RequestOptions
 ): Promise<T> {
   const url = new URL(`${API_BASE_URL}${endpoint}`);
-  
+
   if (options?.params) {
     Object.entries(options.params).forEach(([key, value]) => {
       url.searchParams.append(key, value);
     });
   }
 
+  const token = localStorage.getItem("access_token");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url.toString(), {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
     ...options,
   });
 
@@ -95,12 +102,19 @@ export async function apiPost<T, D = unknown>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const token = localStorage.getItem("access_token");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     ...options,
   });
@@ -116,9 +130,18 @@ export async function apiPostFormData<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const token = localStorage.getItem("access_token");
+  const headers: Record<string, string> = {
+    ...options?.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     method: "POST",
-    // Don't set Content-Type for FormData, browser will set it with boundary
+    headers,
     ...options,
     body: formData,
   });
@@ -133,12 +156,19 @@ export async function apiDelete<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const token = localStorage.getItem("access_token");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
     ...options,
   });
 

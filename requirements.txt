@@ -1,11 +1,10 @@
 fastapi
 uvicorn
 slowapi
-supabase
 pydantic
 pydantic-settings
 python-dotenv
-python-jose
+PyJWT
 cryptography
 bcrypt
 python-multipart
@@ -40,4 +39,7 @@ orjson
 anyio
 google-auth
 googleapis-common-protos
+sqlalchemy
+psycopg2-binary
+email-validator
 

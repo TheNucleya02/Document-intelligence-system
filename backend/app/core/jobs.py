@@ -2,6 +2,9 @@ from enum import Enum
 from typing import Dict, Any
 from pydantic import BaseModel
 import time
+from app.database import SessionLocal
+from app.models import Job as JobModel
+import json
 
 class JobStatus(str, Enum):
     PENDING = "pending"
@@ -16,22 +19,43 @@ class Job(BaseModel):
     result: Dict[str, Any] = None
     error: str = None
 
-# In-memory database
-# { "job_uuid": Job(...) }
-job_store: Dict[str, Job] = {}
-
 def create_job(job_id: str) -> Job:
-    job = Job(id=job_id, status=JobStatus.PENDING)
-    job_store[job_id] = job
-    return job
+    db = SessionLocal()
+    try:
+        job = JobModel(id=job_id, status=JobStatus.PENDING)
+        db.add(job)
+        db.commit()
+        return Job(id=job.id, status=job.status, created_at=time.time())
+    finally:
+        db.close()
 
 def get_job(job_id: str) -> Job:
-    return job_store.get(job_id)
+    db = SessionLocal()
+    try:
+        job = db.query(JobModel).filter(JobModel.id == job_id).first()
+        if job:
+            result = json.loads(job.result) if job.result else None
+            return Job(
+                id=job.id,
+                status=job.status,
+                result=result,
+                error=job.error,
+                created_at=job.created_at.timestamp()
+            )
+        return None
+    finally:
+        db.close()
 
 def update_job_status(job_id: str, status: JobStatus, result: dict = None, error: str = None):
-    if job_id in job_store:
-        job_store[job_id].status = status
-        if result:
-            job_store[job_id].result = result
-        if error:
-            job_store[job_id].error = error
+    db = SessionLocal()
+    try:
+        job = db.query(JobModel).filter(JobModel.id == job_id).first()
+        if job:
+            job.status = status
+            if result:
+                job.result = json.dumps(result)
+            if error:
+                job.error = error
+            db.commit()
+    finally:
+        db.close()

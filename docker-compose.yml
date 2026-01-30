@@ -1,29 +1,57 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: document_intelligence
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fastapi-backend
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/document_intelligence
+      - SECRET_KEY=your-secret-key-change-in-production
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/chroma_db:/app/chroma_db
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: streamlit-frontend
+    container_name: vite-frontend
     ports:
-      - "8501:8501"
+      - "5173:5173"
     environment:
-      - BACKEND_URL=http://backend:8000
+      - VITE_API_BASE_URL=http://localhost:8000
     depends_on:
       - backend
     networks:
@@ -34,7 +62,5 @@ networks:
   app-network:
     driver: bridge
 
-# Optional: Add volumes for development
-# volumes:
-#   backend-data:
-#   frontend-data:
+volumes:
+  postgres_data:
