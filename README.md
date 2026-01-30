@@ -41,7 +41,7 @@ docker-compose up --build
 ```
 
 **Access:**
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
 ### Without Docker
