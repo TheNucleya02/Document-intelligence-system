@@ -1,0 +1,63 @@
+{
+  "info": {
+    "name": "Document Intelligence API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"demo@example.com\",\n  \"password\": \"demo-password\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"demo@example.com\",\n  \"password\": \"demo-password\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Upload",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "body": {
+          "mode": "formdata",
+          "formdata": [{ "key": "file", "type": "file", "src": "backend/sample_data/example.pdf" }]
+        },
+        "url": "{{baseUrl}}/documents/upload"
+      }
+    },
+    {
+      "name": "Ask",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is this document about?\"\n}"
+        },
+        "url": "{{baseUrl}}/chat/ask"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "accessToken", "value": "" }
+  ]
+}

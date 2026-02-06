@@ -43,4 +43,4 @@ def intelligent_chunk_documents(documents: List[Document]) -> List[Document]:
             # Fallback for plain text
             final_chunks.extend(text_splitter.split_documents([doc]))
 
-    return final_chunks
+    return [chunk for chunk in final_chunks if chunk.page_content.strip()]

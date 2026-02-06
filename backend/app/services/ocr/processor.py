@@ -1,8 +1,9 @@
 import pytesseract
-import numpy as np
 from pdf2image import convert_from_path
-from PIL import Image, ImageOps, ImageEnhance
-from typing import List
+from PIL import Image
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def preprocess_image(image: Image) -> Image:
@@ -44,7 +45,7 @@ def extract_text_from_image(image: Image) -> str:
         text = pytesseract.image_to_string(processed_image, config=custom_config)
         return text
     except Exception as e:
-        print(f"Error during OCR extraction: {e}")
+        logger.warning("Error during OCR extraction", extra={"error": str(e)})
         return ""
 
 def ocr_pdf(file_path: str) -> str:
@@ -53,7 +54,7 @@ def ocr_pdf(file_path: str) -> str:
     Returns the combined text of the entire document.
     """
     try:
-        print(f"Converting PDF to images at 300 DPI: {file_path}")
+        logger.info("Converting PDF to images at 300 DPI", extra={"path": file_path})
         
         # 1. Convert PDF pages to images
         # Setting dpi=300 satisfies the "Resize" requirement specifically for PDFs
@@ -62,29 +63,29 @@ def ocr_pdf(file_path: str) -> str:
         
         full_text = []
         for i, image in enumerate(images):
-            print(f"Processing page {i+1} via OCR...")
+            logger.info("Processing page via OCR", extra={"page": i + 1})
             page_text = extract_text_from_image(image)
             full_text.append(f"--- Page {i+1} ---\n{page_text}")
             
         return "\n".join(full_text)
     except Exception as e:
-        print(f"Failed to OCR PDF {file_path}: {e}")
+        logger.warning("Failed to OCR PDF", extra={"path": file_path, "error": str(e)})
         return ""
 
 def ocr_image_file(file_path: str) -> str:
     """Directly processes an image file (JPG, PNG, etc.)."""
     try:
-        print(f"Starting OCR on image: {file_path}")
+        logger.info("Starting OCR on image", extra={"path": file_path})
         image = Image.open(file_path)
         
         # The preprocessing (Grayscale/Resize) happens inside extract_text_from_image
         text = extract_text_from_image(image)
         
-        print(f"OCR extracted text length: {len(text)}")
+        logger.info("OCR extracted text length", extra={"length": len(text)})
         if not text.strip():
-            print("Warning: OCR returned empty text")
+            logger.warning("OCR returned empty text")
             
         return text
     except Exception as e:
-        print(f"Failed to OCR image {file_path}: {e}")
+        logger.warning("Failed to OCR image", extra={"path": file_path, "error": str(e)})
         return ""

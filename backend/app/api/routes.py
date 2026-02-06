@@ -2,23 +2,29 @@ import os
 import shutil
 import time
 from uuid import uuid4
-from typing import List
+import logging
 from fastapi import Request
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.database import get_db
-from app.models import User, Document, Job, DocumentStatus
-
-from app.services.ingestion.loader import ensure_upload_dir, process_upload_background_task
-from app.services.vector_store import get_vector_store
-from app.services.chat import get_conversational_chain
-from app.services.extraction.extractor import analyze_document_structure
+from app.models import User, Document, DocumentStatus, ChatMessage, ChatSession
+from app.core.logging import set_document_id, reset_document_id
+from app.services.ingestion.loader import ensure_upload_dir
+from app.services.vector_store import process_and_store_files
+from app.services.chat import answer_question
 from app.core.limiter import limiter
-from app.core.models import QuestionRequest, QuestionResponse
+from app.core.models import (
+    DocumentUploadResponse,
+    AskRequest,
+    AskResponse,
+    ChatHistoryResponse,
+    ChatMessageResponse,
+)
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # --------------------
@@ -34,7 +40,7 @@ async def health_check():
 # Documents
 # --------------------
 
-@router.get("/documents")
+@router.get("/documents/list")
 async def list_documents(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -58,185 +64,115 @@ async def list_documents(
     ]
 
 
-@router.post("/documents")
+@router.post("/documents/upload", response_model=DocumentUploadResponse)
 @limiter.limit("5/minute")
-async def upload_documents(
-    files: List[UploadFile] = File(...),
-    background_tasks: BackgroundTasks = None,
-    request: Request = None,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """
-    Upload documents, create one job per document, return immediately.
-    """
-    upload_dir = ensure_upload_dir()
-    responses = []
-
-    for file in files:
-        stored_filename = f"{uuid4()}_{file.filename}"
-        file_path = os.path.join(upload_dir, stored_filename)
-
-        with open(file_path, "wb") as f_out:
-            shutil.copyfileobj(file.file, f_out)
-
-        document_id = str(uuid4())
-        document = Document(
-            id=document_id,
-            filename=file.filename,
-            owner_id=user.id,
-            status=DocumentStatus.PENDING,
-        )
-
-        db.add(document)
-        db.commit()
-
-        job_id = str(uuid4())
-        job = Job(id=job_id)
-        db.add(job)
-        db.commit()
-
-        background_tasks.add_task(
-            process_upload_background_task,
-            job_id=job_id,
-            file_paths=[file_path],
-            document_id=document_id,
-        )
-
-        responses.append({
-            "document_id": document_id,
-            "job_id": job_id,
-            "filename": file.filename,
-        })
-
-    return {
-        "message": "Upload accepted. Processing started.",
-        "items": responses,
-    }
-
-
-@router.delete("/documents/{document_id}")
-async def delete_document(
+async def upload_document(
     request: Request,
-    document_id: str,
+    file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Delete a document:
-    - Verify ownership
-    - Delete from vector store
-    - Delete from database
-    """
-    doc = db.query(Document).filter(
-        Document.id == document_id,
-        Document.owner_id == user.id
-    ).first()
+    upload_dir = ensure_upload_dir()
+    stored_filename = f"{uuid4()}_{file.filename}"
+    file_path = os.path.join(upload_dir, stored_filename)
 
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    with open(file_path, "wb") as f_out:
+        shutil.copyfileobj(file.file, f_out)
 
-    vector_store = get_vector_store()
-    vector_store._collection.delete(where={"document_id": document_id})
+    document_id = str(uuid4())
+    token = set_document_id(document_id)
+    document = Document(
+        id=document_id,
+        filename=file.filename,
+        owner_id=user.id,
+        status=DocumentStatus.PROCESSING,
+    )
 
-    db.delete(doc)
+    db.add(document)
     db.commit()
 
-    return {"message": "Document deleted successfully"}
+    try:
+        chunks_added = process_and_store_files(
+            file_paths=[file_path],
+            document_id=document_id,
+            user_id=user.id,
+            document_name=file.filename,
+        )
+        document.status = DocumentStatus.COMPLETED
+        db.commit()
+    except Exception as exc:
+        logger.exception("Document processing failed")
+        document.status = DocumentStatus.FAILED
+        db.commit()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        reset_document_id(token)
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
-
-# --------------------
-# Jobs
-# --------------------
-
-@router.get("/jobs/{job_id}")
-@limiter.limit("60/minute")
-async def get_job_status(
-    request: Request,
-    job_id: str,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """
-    Poll job status.
-    """
-    job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    return {
-        "id": job.id,
-        "status": job.status,
-        "result": job.result,
-        "error": job.error,
-        "created_at": job.created_at.isoformat(),
-    }
+    return DocumentUploadResponse(
+        document_id=document_id,
+        filename=file.filename,
+        chunks_added=chunks_added,
+    )
 
 
 # --------------------
 # Chat
 # --------------------
 
-@router.post("/chat", response_model=QuestionResponse)
+@router.post("/chat/ask", response_model=AskResponse)
 @limiter.limit("20/minute")
 async def ask_question(
     request: Request,
-    req: QuestionRequest,
+    req: AskRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Ask question over ONLY the current user's documents.
-    """
-    docs = db.query(Document).filter(Document.owner_id == user.id).all()
-    document_ids = [d.id for d in docs]
+    try:
+        result = answer_question(
+            db=db,
+            user_id=user.id,
+            question=req.question,
+            session_id=req.session_id,
+            document_ids=req.document_ids,
+        )
+    except ValueError as exc:
+        detail = str(exc)
+        status = 400
+        if detail == "Chat session not found":
+            status = 404
+        raise HTTPException(status_code=status, detail=detail) from exc
 
-    if not document_ids:
-        raise HTTPException(status_code=404, detail="No documents found")
+    return AskResponse(**result)
 
-    chain = get_conversational_chain(
-        filter={"document_id": {"$in": document_ids}}
-    )
-
-    response = chain.invoke(
-        {"input": req.question},
-        config={"configurable": {"session_id": req.session_id}},
-    )
-
-    sources = []
-    if "context" in response:
-        for doc in response["context"]:
-            if hasattr(doc, "metadata") and "document_id" in doc.metadata:
-                sources.append(doc.metadata["document_id"])
-
-    sources = list(dict.fromkeys(sources))
-
-    return QuestionResponse(answer=response["answer"], sources=sources)
-
-
-# --------------------
-# Analysis
-# --------------------
-
-@router.post("/documents/{document_id}/analyze")
-@limiter.limit("5/minute")
-async def analyze_document(
+@router.get("/chat/history", response_model=ChatHistoryResponse)
+@limiter.limit("60/minute")
+async def chat_history(
     request: Request,
-    document_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Analyze ONE document belonging to the user.
-    """
-    doc = db.query(Document).filter(
-        Document.id == document_id,
-        Document.owner_id == user.id
+    session = db.query(ChatSession).filter(
+        ChatSession.id == session_id,
+        ChatSession.user_id == user.id,
     ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
 
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    analysis = analyze_document_structure(document_id=document_id)
-
-    return analysis
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.session_id == session_id)
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+    response_messages = [
+        ChatMessageResponse(
+            role=m.role,
+            content=m.content,
+            created_at=m.created_at.isoformat(),
+        )
+        for m in messages
+    ]
+    return ChatHistoryResponse(session_id=session_id, messages=response_messages)

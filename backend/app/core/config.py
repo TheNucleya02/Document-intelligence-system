@@ -10,9 +10,12 @@ class Settings:
         "postgresql://user:password@localhost:5432/document_intelligence"
     )
     SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    LLM_MODEL = os.getenv("LLM_MODEL", "mistral-large-latest")
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "mistral-embed")
     COLLECTION_NAME = "pdf_docs"
-    CHUNK_SIZE = 1000
-    CHUNK_OVERLAP = 200
+    CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
+    CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
+    RETRIEVAL_K = int(os.getenv("RETRIEVAL_K", "4"))
     CHROMA_DB_DIR = os.path.join(os.getcwd(), "chroma_db")
     UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
 

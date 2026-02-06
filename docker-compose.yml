@@ -43,21 +43,6 @@ services:
       - app-network
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: vite-frontend
-    ports:
-      - "8080:8080"
-    environment:
-      - VITE_API_BASE_URL=http://backend:8000
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    restart: unless-stopped
-
 networks:
   app-network:
     driver: bridge

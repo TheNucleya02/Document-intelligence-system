@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
 from typing import List
+import logging
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain_core.documents import Document
 from app.core.config import settings
+from app.services.ingestion.cleaner import clean_text
 
 # OCR
 from app.services.ocr.processor import ocr_pdf, ocr_image_file
@@ -22,10 +24,15 @@ def ensure_upload_dir() -> str:
 # Background Task Entry Point
 # -----------------------------
 
+logger = logging.getLogger(__name__)
+
+
 def process_upload_background_task(
     job_id: str,
     file_paths: List[str],
     document_id: str,
+    user_id: str,
+    document_name: str,
 ):
     """
     This function runs in the background.
@@ -34,7 +41,7 @@ def process_upload_background_task(
     All chunks are tagged with document_id.
     """
     try:
-        print(f"[{job_id}] Starting background processing for {len(file_paths)} files...")
+        logger.info("Background processing started", extra={"job_id": job_id, "count": len(file_paths)})
         update_job_status(job_id, JobStatus.PROCESSING)
 
         # Import here to avoid circular import
@@ -44,6 +51,8 @@ def process_upload_background_task(
         chunks_added = process_and_store_files(
             file_paths=file_paths,
             document_id=document_id,
+            user_id=user_id,
+            document_name=document_name,
         )
 
         result = {
@@ -54,10 +63,10 @@ def process_upload_background_task(
         }
 
         update_job_status(job_id, JobStatus.COMPLETED, result=result)
-        print(f"[{job_id}] Processing complete.")
+        logger.info("Background processing complete", extra={"job_id": job_id})
 
     except Exception as e:
-        print(f"[{job_id}] Processing failed: {e}")
+        logger.exception("Background processing failed", extra={"job_id": job_id})
         update_job_status(job_id, JobStatus.FAILED, error=str(e))
 
     finally:
@@ -71,7 +80,12 @@ def process_upload_background_task(
 # Document Loading (OCR aware)
 # -----------------------------
 
-def load_docs_from_path(path: str, document_id: str) -> List[Document]:
+def load_docs_from_path(
+    path: str,
+    document_id: str,
+    user_id: str,
+    document_name: str,
+) -> List[Document]:
     """
     Loads a file, applies OCR if needed, and ALWAYS attaches document_id in metadata.
     """
@@ -89,17 +103,22 @@ def load_docs_from_path(path: str, document_id: str) -> List[Document]:
                 # Attach document_id to all pages
                 for d in docs:
                     d.metadata["document_id"] = document_id
+                    d.metadata["user_id"] = user_id
+                    d.metadata["document_name"] = document_name
                     d.metadata["source"] = path
+                    if "page" in d.metadata:
+                        d.metadata["page_number"] = d.metadata.get("page")
                     d.metadata["is_ocr"] = False
+                    d.page_content = clean_text(d.page_content)
                 return docs
 
-            print(f"Standard extraction returned empty/low text for {path}. Attempting OCR...")
+            logger.info("Standard extraction low text, attempting OCR", extra={"path": path})
 
         except Exception as e:
-            print(f"Standard loading error for {path}: {e}. Attempting OCR...")
+            logger.warning("Standard loading error, attempting OCR", extra={"path": path, "error": str(e)})
 
         # 2. OCR fallback
-        extracted_text = ocr_pdf(path)
+        extracted_text = clean_text(ocr_pdf(path))
         if extracted_text.strip():
             return [
                 Document(
@@ -107,6 +126,9 @@ def load_docs_from_path(path: str, document_id: str) -> List[Document]:
                     metadata={
                         "source": path,
                         "document_id": document_id,
+                        "user_id": user_id,
+                        "document_name": document_name,
+                        "page_number": None,
                         "is_ocr": True,
                     },
                 )
@@ -114,8 +136,8 @@ def load_docs_from_path(path: str, document_id: str) -> List[Document]:
         return []
 
     elif suffix in [".jpg", ".jpeg", ".png"]:
-        text = ocr_image_file(path)
-        print(f"OCR text length for {path}: {len(text)}")
+        text = clean_text(ocr_image_file(path))
+        logger.info("OCR text length", extra={"path": path, "length": len(text)})
         if text.strip():
             return [
                 Document(
@@ -123,6 +145,9 @@ def load_docs_from_path(path: str, document_id: str) -> List[Document]:
                     metadata={
                         "source": path,
                         "document_id": document_id,
+                        "user_id": user_id,
+                        "document_name": document_name,
+                        "page_number": None,
                         "is_ocr": True,
                     },
                 )
@@ -133,8 +158,12 @@ def load_docs_from_path(path: str, document_id: str) -> List[Document]:
         docs = Docx2txtLoader(path).load()
         for d in docs:
             d.metadata["document_id"] = document_id
+            d.metadata["user_id"] = user_id
+            d.metadata["document_name"] = document_name
             d.metadata["source"] = path
+            d.metadata["page_number"] = None
             d.metadata["is_ocr"] = False
+            d.page_content = clean_text(d.page_content)
         return docs
 
     return []

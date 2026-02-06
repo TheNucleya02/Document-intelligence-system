@@ -3,9 +3,10 @@ from typing import Optional
 import os
 import jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, Header, Depends
+from fastapi import HTTPException, Header, Depends, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.core.logging import set_user_id
 from app.models import User
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
@@ -79,6 +80,7 @@ def decode_token(token: str) -> Optional[dict]:
 
 
 async def get_current_user(
+    request: Request,
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ) -> User:
@@ -99,5 +101,8 @@ async def get_current_user(
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
+
+    request.state.user_id = user.id
+    set_user_id(user.id)
 
     return user

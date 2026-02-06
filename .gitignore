@@ -138,3 +138,5 @@ yarn-error.log*
 # Pipfile.lock
 # poetry.lock
 # requirements.lock
+
+!postman_collection.json

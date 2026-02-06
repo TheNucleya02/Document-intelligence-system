@@ -1,158 +1,142 @@
-# 📚 Document Intelligence System
+# Document Intelligence System (Minimal RAG Backend)
 
-A production-ready document question-answering system that allows users to upload PDF and DOCX files and ask questions about their content using advanced AI technology. Built with FastAPI backend, React frontend, and PostgreSQL database.
+A learning-focused, production-style Document Intelligence backend with a minimal HTML UI. The system ingests PDFs/DOCX, creates deterministic chunks + embeddings, and answers questions with strict source attribution.
 
-## ✨ Features
+## Goals
+- Stable, testable ingestion pipeline
+- Clear RAG flow with explicit prompt structure
+- DB-backed chat sessions and message history
+- Minimal frontend (HTML + Bootstrap + vanilla JS)
 
-### 🚀 **Core Functionality**
-- **Multi-format Document Support**: Upload PDF and DOCX files
-- **Intelligent Text Chunking**: Smart document segmentation for optimal retrieval
-- **Conversational AI**: Ask follow-up questions with context awareness
-- **Source Attribution**: Get references to specific documents that informed the answer
-- **Session Management**: Maintain conversation history across interactions
+## Stack
+- FastAPI + SQLAlchemy
+- PostgreSQL (Docker) or SQLite (local)
+- Chroma DB (local embeddings store)
+- Mistral AI (LLM + embeddings)
 
-### 🔐 **Security & Authentication**
-- **JWT Authentication**: Secure token-based authentication
-- **User Registration & Login**: Email + password based authentication
-- **Bcrypt Password Hashing**: Industry-standard password security
-- **Token Refresh Mechanism**: Automatic token rotation
-- **Document Ownership**: Users can only access their documents
+## Quick Start
 
-### 🎯 **Production Ready**
-- **PostgreSQL Database**: Scalable relational database
-- **Docker Compose**: Easy deployment and development setup
-- **Connection Pooling**: Optimized database connections
-- **Error Handling**: Comprehensive error management
-- **Health Monitoring**: API status and diagnostics
-- **RESTful API**: Well-documented with Swagger UI
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker & Docker Compose OR Python 3.10+, Node.js 18+
-- Mistral AI API key
-
-### With Docker Compose (Recommended)
-
+### Docker
 ```bash
-git clone <repo-url> && cd document-intelligence
-echo "MISTRAL_API_KEY=your-key-here" > .env
+echo "MISTRAL_API_KEY=your-key" > .env
 docker-compose up --build
 ```
 
-**Access:**
-- Frontend: http://localhost:8000
+- UI: http://localhost:8000/login
 - API Docs: http://localhost:8000/docs
 
-### Without Docker
-
-**Backend:**
+### Local (no Docker)
 ```bash
-cd backend && pip install -r requirements.txt
+cd backend
+pip install -r ../requirements.txt
 python migrations.py
 uvicorn app.main:app --reload
 ```
 
-**Frontend:**
-```bash
-cd frontend && npm install && npm run dev
+## Minimal UI Pages
+- `/login`
+- `/register`
+- `/upload`
+- `/chat`
+
+The UI is a thin API client with no build tools or frameworks.
+
+## API Endpoints
+
+**Auth**
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+
+**Documents**
+- `POST /documents/upload`
+- `GET /documents/list`
+
+**Chat**
+- `POST /chat/ask`
+- `GET /chat/history?session_id=...`
+
+**Health**
+- `GET /health`
+
+## RAG Flow (Deterministic)
+```
+Upload → Parse → Clean Text → Chunk → Embed → Store → Retrieve → Answer
 ```
 
-## 🔐 Authentication
+Prompt structure is explicit and always includes:
+1. Instruction
+2. Retrieved chunks
+3. Chat history
+4. User question
+
+RAG rules enforced in the system prompt:
+- Never hallucinate
+- Say “I don’t know” if answer is not in chunks
+- Always cite document name + chunk index
+
+## Database Schema
+Tables:
+- `users`
+- `documents`
+- `document_chunks`
+- `chat_sessions`
+- `chat_messages`
+
+Each chunk stores:
+- `document_id`, `user_id`, `page_number`, `chunk_index`, `text`
+
+## Example PDF + Seed Data
+- Example PDF: `backend/sample_data/example.pdf`
+- Seed user script: `backend/seed_data.py`
+
+```bash
+cd backend
+python seed_data.py
+```
+
+## Example cURL
 
 ```bash
 # Register
 curl -X POST http://localhost:8000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "secure123"}'
+  -d '{"email":"demo@example.com","password":"demo-password"}'
 
 # Login
 curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "secure123"}'
+  -d '{"email":"demo@example.com","password":"demo-password"}'
 
-# Use token in requests
-curl -H "Authorization: Bearer <token>" http://localhost:8000/documents
+# Upload
+curl -X POST http://localhost:8000/documents/upload \
+  -H "Authorization: Bearer <access_token>" \
+  -F "file=@backend/sample_data/example.pdf"
+
+# Ask
+curl -X POST http://localhost:8000/chat/ask \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What is this document about?"}'
 ```
 
-## 📋 API Endpoints
-
-**Auth:** `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`
-
-**Documents:** `GET/POST /documents`, `DELETE /documents/{id}`, `POST /documents/{id}/analyze`
-
-**Chat:** `POST /chat`, `GET /jobs/{id}`, `GET /health`
-
-## 🏗️ Architecture
-
-```
-Frontend (React)   ←HTTP/JWT→   Backend (FastAPI)   ←→   PostgreSQL
-                                      ↓
-                            Chroma DB + Mistral AI
-```
-
-## 🐳 Services
-
-- **PostgreSQL**: User & document storage
-- **FastAPI**: REST API with Swagger at `/docs`
-- **React**: Frontend with TypeScript & Tailwind
-
-## 🔒 Security
-
-- JWT (15min access, 7day refresh tokens)
-- Bcrypt password hashing
-- CORS & rate limiting
-- Document ownership enforcement
-
-## 📁 Key Files
-
-```
-backend/
-├── app/database.py          # SQLAlchemy setup
-├── app/models.py            # ORM models
-├── app/core/security.py     # JWT & auth
-├── app/api/auth.py          # Auth routes
-└── migrations.py            # DB setup
-
-frontend/
-├── src/api/auth.ts          # Auth client
-├── src/api/client.ts        # API wrapper
-└── src/pages/               # React pages
-```
-
-## 🚀 Deployment
-
-**Environment Variables:**
+## Environment Variables
 ```env
-DATABASE_URL=postgresql://user:pass@host:5432/db
-SECRET_KEY=your-secret-key-here
-MISTRAL_API_KEY=your-api-key
-VITE_API_BASE_URL=https://api.yourdomain.com
+DATABASE_URL=postgresql://user:password@localhost:5432/document_intelligence
+SECRET_KEY=your-secret-key-change-in-production
+MISTRAL_API_KEY=your-mistral-key
+LLM_MODEL=mistral-large-latest
+EMBEDDING_MODEL=mistral-embed
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+RETRIEVAL_K=4
 ```
 
-## 🛠️ Commands
-
-```bash
-docker-compose logs -f backend           # Logs
-docker-compose exec postgres psql ...    # Database CLI
-docker-compose down -v                   # Reset all
-npm run build                            # Build frontend
+## Folder Structure (Key)
 ```
-
-## 📖 Documentation
-
-See [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) for detailed architecture documentation.
-
-## 🐛 Troubleshooting
-
-**DB Connection Error**: Check `docker-compose ps`
-**401 Unauthorized**: Re-login, check token in DevTools
-**Port in Use**: Change port in `docker-compose.yml`
-
-## 📄 License
-
-MIT License
-
----
-
-**Production-ready. Scalable. Secure. Built with FastAPI, React, and PostgreSQL.**
+backend/app/api            # FastAPI routers
+backend/app/core           # auth, config, logging
+backend/app/services       # ingestion, retrieval, llm
+backend/app/static         # minimal UI
+backend/sample_data        # example PDF
+```
