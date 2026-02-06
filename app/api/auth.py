@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import User
+from app.db.session import get_db
+from app.db.models import User
 from app.core.security import (
     hash_password,
     verify_password,

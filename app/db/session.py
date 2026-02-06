@@ -1,11 +1,11 @@
 import os
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite:///./document_intelligence.db"
+    "sqlite:///./data/document_intelligence.db"
 )
 
 if DATABASE_URL.startswith("postgresql://"):

@@ -1,123 +1,93 @@
-# Document Intelligence System (Minimal RAG Backend)
+# Document Intelligence System (Backend-First RAG)
 
-A learning-focused, production-style Document Intelligence backend with a minimal HTML UI. The system ingests PDFs/DOCX, creates deterministic chunks + embeddings, and answers questions with strict source attribution.
+A learning‑focused, production‑style GenAI backend for document Q&A. The UI is intentionally minimal (static HTML + Bootstrap) and serves only as an API client.
 
-## Goals
-- Stable, testable ingestion pipeline
-- Clear RAG flow with explicit prompt structure
-- DB-backed chat sessions and message history
-- Minimal frontend (HTML + Bootstrap + vanilla JS)
+## Why This Structure
+- Clear separation of **application code**, **runtime data**, and **infrastructure**
+- Easy to reason about for recruiters and senior engineers
+- GenAI/RAG architecture is front‑and‑center
 
-## Stack
-- FastAPI + SQLAlchemy
-- PostgreSQL (Docker) or SQLite (local)
-- Chroma DB (local embeddings store)
-- Mistral AI (LLM + embeddings)
+## Folder Structure
+```
+app/                # Application source code 
+  api/              # FastAPI routers
+  core/             # config, logging, security
+  services/         # ingestion, retrieval, llm
+  db/               # ORM models + DB session
+  schemas/          # request/response schemas
+  static/           # minimal HTML UI
+  main.py           # app entrypoint
 
-## Quick Start
+data/               # Runtime data (gitignored)
+  uploads/
+  vector_store/
+  samples/
 
-### Docker
-```bash
-echo "MISTRAL_API_KEY=your-key" > .env
-docker-compose up --build
+scripts/            # One-off scripts
+  migrate.py
+  seed_data.py
+
+infra/              # Docker and deployment assets
+  Dockerfile
+  docker-compose.yml
+
+requirements.txt
+README.md
+ARCHITECTURE.md
+postman_collection.json
 ```
 
-- UI: http://localhost:8000/login
-- API Docs: http://localhost:8000/docs
-
-### Local (no Docker)
-```bash
-cd backend
-pip install -r ../requirements.txt
-python migrations.py
-uvicorn app.main:app --reload
-```
-
-## Minimal UI Pages
-- `/login`
-- `/register`
-- `/upload`
-- `/chat`
-
-The UI is a thin API client with no build tools or frameworks.
-
-## API Endpoints
-
-**Auth**
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/refresh`
-
-**Documents**
-- `POST /documents/upload`
-- `GET /documents/list`
-
-**Chat**
-- `POST /chat/ask`
-- `GET /chat/history?session_id=...`
-
-**Health**
-- `GET /health`
-
-## RAG Flow (Deterministic)
+## RAG Flow
 ```
 Upload → Parse → Clean Text → Chunk → Embed → Store → Retrieve → Answer
 ```
-
-Prompt structure is explicit and always includes:
+Prompt structure is explicit:
 1. Instruction
 2. Retrieved chunks
 3. Chat history
 4. User question
 
-RAG rules enforced in the system prompt:
+RAG rules enforced:
 - Never hallucinate
-- Say “I don’t know” if answer is not in chunks
+- Say “I don’t know” if answer isn’t in chunks
 - Always cite document name + chunk index
 
-## Database Schema
-Tables:
-- `users`
-- `documents`
-- `document_chunks`
-- `chat_sessions`
-- `chat_messages`
-
-Each chunk stores:
-- `document_id`, `user_id`, `page_number`, `chunk_index`, `text`
-
-## Example PDF + Seed Data
-- Example PDF: `backend/sample_data/example.pdf`
-- Seed user script: `backend/seed_data.py`
-
+## Run Locally (No Docker)
 ```bash
-cd backend
-python seed_data.py
+pip install -r requirements.txt
+python scripts/migrate.py
+uvicorn app.main:app --reload
 ```
 
-## Example cURL
+UI pages:
+- http://localhost:8000/login
+- http://localhost:8000/register
+- http://localhost:8000/upload
+- http://localhost:8000/chat
+
+## Run with Docker
+```bash
+echo "MISTRAL_API_KEY=your-key" > .env
+
+docker compose -f infra/docker-compose.yml up --build
+```
+
+## API Endpoints
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /documents/upload`
+- `GET /documents/list`
+- `POST /chat/ask`
+- `GET /chat/history?session_id=...`
+- `GET /health`
+
+## Example Data
+- Example PDF: `data/samples/example.pdf`
+- Seed user script: `scripts/seed_data.py`
 
 ```bash
-# Register
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"demo-password"}'
-
-# Login
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"demo-password"}'
-
-# Upload
-curl -X POST http://localhost:8000/documents/upload \
-  -H "Authorization: Bearer <access_token>" \
-  -F "file=@backend/sample_data/example.pdf"
-
-# Ask
-curl -X POST http://localhost:8000/chat/ask \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"question":"What is this document about?"}'
+python scripts/seed_data.py
 ```
 
 ## Environment Variables
@@ -132,11 +102,5 @@ CHUNK_OVERLAP=200
 RETRIEVAL_K=4
 ```
 
-## Folder Structure (Key)
-```
-backend/app/api            # FastAPI routers
-backend/app/core           # auth, config, logging
-backend/app/services       # ingestion, retrieval, llm
-backend/app/static         # minimal UI
-backend/sample_data        # example PDF
-```
+## Minimal UI
+No React/Vue/Next. The UI is static HTML + Bootstrap in `app/static` and uses `fetch` only.

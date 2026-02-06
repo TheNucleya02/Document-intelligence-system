@@ -8,14 +8,14 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.database import get_db
-from app.models import User, Document, DocumentStatus, ChatMessage, ChatSession
+from app.db.session import get_db
+from app.db.models import User, Document, DocumentStatus, ChatMessage, ChatSession
 from app.core.logging import set_document_id, reset_document_id
 from app.services.ingestion.loader import ensure_upload_dir
 from app.services.vector_store import process_and_store_files
 from app.services.chat import answer_question
 from app.core.limiter import limiter
-from app.core.models import (
+from app.schemas.models import (
     DocumentUploadResponse,
     AskRequest,
     AskResponse,

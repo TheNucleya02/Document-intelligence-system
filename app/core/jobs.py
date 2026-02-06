@@ -2,8 +2,8 @@ from enum import Enum
 from typing import Dict, Any
 from pydantic import BaseModel
 import time
-from app.database import SessionLocal
-from app.models import Job as JobModel
+from app.db.session import SessionLocal
+from app.db.models import Job as JobModel
 import json
 
 class JobStatus(str, Enum):

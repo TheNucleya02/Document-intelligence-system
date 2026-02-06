@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from app.models import ChatSession, ChatMessage, Document
+from app.db.models import ChatSession, ChatMessage, Document
 from app.services.retrieval.retriever import retrieve_chunks
 from app.services.llm import LLMClient
 

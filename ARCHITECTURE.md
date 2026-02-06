@@ -1,66 +1,42 @@
-# Document Intelligence System - Architecture
+# Architecture
 
-## System Overview
-A minimal, backend-first RAG application for learning and production-style patterns. The UI is simple HTML + Bootstrap and serves only as an API client.
+## Overview
+Backend‑first RAG system with a minimal static UI. The backend owns ingestion, retrieval, and chat memory. The UI is a thin API client.
 
-## Tech Stack
-- FastAPI + SQLAlchemy
-- PostgreSQL (Docker) or SQLite (local)
-- Chroma DB for embeddings
-- Mistral AI for LLM + embeddings
+## Application Layout
+- `app/api`: FastAPI routes
+- `app/core`: config, logging, auth
+- `app/services`: ingestion, retrieval, LLM, vector store
+- `app/db`: SQLAlchemy models + session
+- `app/schemas`: request/response models
+- `app/static`: HTML UI
 
-## Core Pipeline
+## Data & Runtime
+- `data/uploads`: uploaded files
+- `data/vector_store`: Chroma persistence
+- `data/samples`: sample docs (local only)
+
+## RAG Pipeline
 ```
-Upload → Parse → Clean Text → Chunk → Embed → Store → Retrieve → Answer
+Upload → Parse → Clean → Chunk → Embed → Store → Retrieve → Answer
 ```
 
-## API Layer
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /documents/upload`
-- `GET /documents/list`
-- `POST /chat/ask`
-- `GET /chat/history`
-- `GET /health`
+## LLM Prompt Structure
+The LLM receives:
+1. Instruction
+2. Retrieved chunks
+3. Chat history
+4. User question
 
-## Data Layer
-Tables:
-- `users`
-- `documents`
-- `document_chunks`
-- `chat_sessions`
-- `chat_messages`
-
-`document_chunks` stores deterministic chunk metadata:
-- `document_id`, `user_id`, `page_number`, `chunk_index`, `text`
-
-`chat_sessions` binds the session to a document set.
-`chat_messages` stores the full chat history and sources.
-
-## LLM Layer
-Single abstraction in `app/services/llm.py` with explicit prompt structure:
-- Instruction
-- Retrieved chunks
-- Chat history
-- User question
-
-Rules are enforced in the system prompt:
-- Never hallucinate
-- Say “I don’t know” if answer is not in chunks
+Rules:
+- Use only retrieved chunks
+- If not present, respond “I don’t know”
 - Always cite document name + chunk index
 
+## Persistence
+- `document_chunks` stores chunk metadata
+- `chat_sessions` binds a session to a document set
+- `chat_messages` stores conversation history and sources
+
 ## Observability
-Structured logging includes:
-- `request_id`
-- `user_id`
-- `document_id`
-
-## Minimal UI
-Static HTML is served at:
-- `/login`
-- `/register`
-- `/upload`
-- `/chat`
-
-No SPA framework or build tools are used.
+Structured logs include `request_id`, `user_id`, and `document_id`.

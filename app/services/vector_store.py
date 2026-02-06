@@ -10,8 +10,8 @@ from langchain_core.documents import Document
 from app.core.config import settings
 from app.services.ingestion.loader import load_docs_from_path
 from app.services.chunking.splitter import intelligent_chunk_documents
-from app.database import SessionLocal
-from app.models import DocumentChunk
+from app.db.session import SessionLocal
+from app.db.models import DocumentChunk
 
 logger = logging.getLogger(__name__)
 

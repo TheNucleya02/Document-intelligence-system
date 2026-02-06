@@ -5,9 +5,9 @@ import jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, Header, Depends, Request
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.db.session import get_db
 from app.core.logging import set_user_id
-from app.models import User
+from app.db.models import User
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"

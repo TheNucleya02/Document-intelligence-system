@@ -1,5 +1,5 @@
-from app.database import SessionLocal
-from app.models import User
+from app.db.session import SessionLocal
+from app.db.models import User
 from app.core.security import hash_password
 
 SEED_EMAIL = "demo@example.com"

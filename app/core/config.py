@@ -16,8 +16,8 @@ class Settings:
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
     RETRIEVAL_K = int(os.getenv("RETRIEVAL_K", "4"))
-    CHROMA_DB_DIR = os.path.join(os.getcwd(), "chroma_db")
-    UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+    CHROMA_DB_DIR = os.path.join(os.getcwd(), "data", "vector_store")
+    UPLOAD_DIR = os.path.join(os.getcwd(), "data", "uploads")
 
     os.environ["MISTRAL_API_KEY"] = MISTRAL_API_KEY
 

@@ -54,6 +54,9 @@ config/secrets.json
 *.sqlite
 *.sqlite3
 
+# Runtime data
+data/
+
 # Vector Database (Chroma)
 chroma_db/
 *.chroma
