@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 200
     RETRIEVAL_K: int = 4
 
+    # Pinecone Vector Store
+    PINECONE_API_KEY: Optional[str] = None
+    PINECONE_INDEX_NAME: str = "doc-intel"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 settings = Settings()
