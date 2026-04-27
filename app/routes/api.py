@@ -2,11 +2,11 @@ import json
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from app.db.database import get_db
-from app.db.models import Conversation
-from app.models.schemas import QueryRequest, QueryResponse, Source, ConversationResponse, UploadResponse
-from app.services.rag import process_pdf, query_rag, stream_query_rag
-from app.services.vector_store import clear_vector_store
+from ..db.database import get_db
+from ..db.models import Conversation
+from ..models.schemas import QueryRequest, QueryResponse, Source, ConversationResponse, UploadResponse
+from ..services.rag import process_pdf, query_rag, stream_query_rag
+from ..services.vector_store import clear_vector_store
 
 router = APIRouter()
 

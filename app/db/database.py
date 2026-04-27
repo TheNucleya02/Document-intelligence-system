@@ -2,7 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.utils.config import settings
+from ..utils.config import settings
 
 connect_args = {}
 # SQLAlchemy 1.4+ requires "postgresql://" but Render provides "postgres://"

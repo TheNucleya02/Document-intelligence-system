@@ -10,8 +10,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_mistralai import ChatMistralAI
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.services.vector_store import get_vector_store
-from app.utils.config import settings
+from .vector_store import get_vector_store
+from ..utils.config import settings
 
 def get_llm(streaming: bool = False):
     if settings.MISTRAL_API_KEY:

@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.routes.api import router
-from app.db.database import engine, Base
+from .routes.api import router
+from .db.database import engine, Base
 import os
 
 # Create database tables
