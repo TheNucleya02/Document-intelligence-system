@@ -1,6 +1,6 @@
 import os
-import shutil
-from langchain_chroma import Chroma
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone
 from langchain_mistralai import MistralAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.utils.config import settings
@@ -21,19 +21,22 @@ def get_embeddings():
 
 def get_vector_store():
     embeddings = get_embeddings()
-    # Create the data directory if it doesn't exist
-    persist_directory = "./data/chroma"
-    os.makedirs(persist_directory, exist_ok=True)
+    if not settings.PINECONE_API_KEY:
+        raise ValueError("PINECONE_API_KEY is missing. Please set it in your environment or .env file.")
     
-    return Chroma(
-        collection_name="doc_intel",
-        embedding_function=embeddings,
-        persist_directory=persist_directory
+    return PineconeVectorStore(
+        index_name=settings.PINECONE_INDEX_NAME,
+        embedding=embeddings,
+        pinecone_api_key=settings.PINECONE_API_KEY
     )
 
 def clear_vector_store():
-    persist_directory = "./data/chroma"
-    if os.path.exists(persist_directory):
-        shutil.rmtree(persist_directory)
-    # Recreate the directory
-    os.makedirs(persist_directory, exist_ok=True)
+    if not settings.PINECONE_API_KEY:
+        return
+        
+    try:
+        pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+        index = pc.Index(settings.PINECONE_INDEX_NAME)
+        index.delete(delete_all=True)
+    except Exception as e:
+        print(f"Error clearing Pinecone index: {e}")

@@ -6,10 +6,11 @@ langchain>=0.2.0
 langchain-mistralai
 langchain-google-genai
 langchain-community>=0.2.0
-langchain-chroma
-chromadb
+langchain-pinecone
+pinecone-client
 pypdf
 sqlalchemy
+psycopg2-binary
 python-multipart
 langsmith
 python-dotenv

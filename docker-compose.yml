@@ -5,10 +5,6 @@ services:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - ./data:/app/data
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=sqlite:///./data/doc_intel.db
     restart: unless-stopped
