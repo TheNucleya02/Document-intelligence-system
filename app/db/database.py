@@ -6,7 +6,7 @@ from ..utils.config import settings
 
 connect_args = {}
 # SQLAlchemy 1.4+ requires "postgresql://" but Render provides "postgres://"
-db_url = settings.DATABASE_URL
+db_url = settings.DATABASE_URL.strip().strip("]")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
