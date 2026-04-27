@@ -57,8 +57,8 @@ The system follows a modular, service-oriented architecture designed for separat
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/TheNucleya02/Document-intelligence-system.git
-    cd Document-intelligence-system
+    git clone https://github.com/TheNucleya02/DocIntel.git
+    cd DocIntel
     ```
 
 2.  **Configure Environment Variables**:
@@ -104,7 +104,7 @@ The system follows a modular, service-oriented architecture designed for separat
 
 **Your Name**
 - GitHub: [@TheNucleya02](https://github.com/TheNucleya02)
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
+- LinkedIn: [Your Profile](https://linkedin.com/in/amanjha02)
 
 ---
 
