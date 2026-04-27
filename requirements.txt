@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+langchain
+langchain-mistralai
+langchain-google-genai
+langchain-community
+chromadb
+pypdf
+sqlalchemy
+python-multipart
+langsmith
+python-dotenv
